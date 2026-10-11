@@ -127,6 +127,15 @@ agent/plugin/   Claude Code plugin with the agents' skills (teach, lesson-video;
 docs/           Architecture notes
 ```
 
+## Credits
+
+- The `teach` skill in `agent/plugin/skills/teach/` is adapted from the `teach` skill in
+  [mattpocock/skills](https://github.com/mattpocock/skills), MIT License, Copyright (c) 2026 Matt
+  Pocock. Its four format files are unchanged; `SKILL.md` is rewritten for this app. The original
+  license is in [agent/plugin/skills/teach/LICENSE](agent/plugin/skills/teach/LICENSE).
+- Videos are built with [HyperFrames](https://www.npmjs.com/package/hyperframes); its skills are
+  installed by `npm run sync-skills` and are not part of this repository.
+
 ## License
 
 [MIT](LICENSE)
