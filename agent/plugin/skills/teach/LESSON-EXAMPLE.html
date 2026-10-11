@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Split the velocity</title>
+<!-- The app injects /stoa/lesson.css and the learn bridge. Only lesson-specific CSS goes here. -->
+<style>
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s-4); }
+</style>
+</head>
+<body>
+<main>
+  <p class="meta"><span>Lesson 2</span><span>About 12 minutes</span><span>Projectile motion</span></p>
+  <h1>Split the velocity</h1>
+  <p class="lede">A launch gives you one speed and one angle. The two rules from lesson 1 need two speeds: one sideways, one upward. Trigonometry converts the first form into the second.</p>
+
+  <div class="callout">
+    <p><strong>Why this matters for your mission.</strong> <code>vx = v·cos(θ)</code> and <code>vy = v·sin(θ)</code> are the first two lines of every trajectory program.</p>
+  </div>
+
+  <div data-learn-video></div>
+
+  <h2>The split</h2>
+  <p>Draw the launch speed as an arrow at the launch angle. Drop a line straight down from its tip to the ground. You now have a right triangle: the arrow is the hypotenuse, the ground side is the sideways speed, and the vertical side is the upward speed <a class="cite" href="https://openstax.org/books/university-physics-volume-1/pages/4-3-projectile-motion">[OpenStax University Physics, 4.3]</a>.</p>
+
+  <figure>
+    <svg class="diagram" viewBox="0 0 600 260" role="img" aria-label="A launch arrow at 35 degrees split into a horizontal arrow vx and a vertical arrow vy">
+      <line x1="60" y1="210" x2="560" y2="210" stroke="var(--line-strong)" stroke-width="2"/>
+      <line x1="80" y1="210" x2="380" y2="210" stroke="var(--viz-1)" stroke-width="4" stroke-linecap="round"/>
+      <line x1="380" y1="210" x2="380" y2="40" stroke="var(--viz-2)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 10"/>
+      <line x1="80" y1="210" x2="380" y2="40" stroke="var(--ink-1)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M140 210 A60 60 0 0 0 129 180" fill="none" stroke="var(--ink-3)" stroke-width="2"/>
+      <text x="150" y="196" fill="var(--ink-2)" font-family="var(--math)" font-style="italic" font-size="20">θ</text>
+      <text x="215" y="110" fill="var(--ink-1)" font-family="var(--math)" font-style="italic" font-size="22">v</text>
+      <text x="220" y="240" fill="var(--viz-1)" font-family="var(--math)" font-style="italic" font-size="22">v<tspan font-size="15" dy="5">x</tspan></text>
+      <text x="395" y="130" fill="var(--viz-2)" font-family="var(--math)" font-style="italic" font-size="22">v<tspan font-size="15" dy="5">y</tspan></text>
+    </svg>
+    <figcaption>The launch arrow is the hypotenuse. Its shadow on the ground is <span class="math">v<sub>x</sub></span>; its height is <span class="math">v<sub>y</sub></span>.</figcaption>
+  </figure>
+
+  <p>Cosine gives the side next to the angle, and sine gives the side opposite it:</p>
+  <div class="formula">
+    <p>v<sub>x</sub> = v · cos θ</p>
+    <p>v<sub>y</sub> = v · sin θ</p>
+  </div>
+
+  <details>
+    <summary>Why sine is the vertical one</summary>
+    <p>The angle sits at the ground. The side opposite that corner is the vertical side, and sine is “opposite over hypotenuse”. Quick check: at 90° the throw is straight up, and sin 90° = 1.</p>
+  </details>
+
+  <section class="exercise" id="ex1">
+    <span class="count">Exercise 1 of 2</span>
+    <h2>A ball leaves at 20 m/s and 35°. Find v<sub>x</sub> and v<sub>y</sub>.</h2>
+    <div class="fields">
+      <div class="field"><label for="vx">v<sub>x</sub> in m/s</label><input class="input" id="vx" inputmode="decimal" autocomplete="off"></div>
+      <div class="field"><label for="vy">v<sub>y</sub> in m/s</label><input class="input" id="vy" inputmode="decimal" autocomplete="off"></div>
+    </div>
+    <div id="ex1-feedback"></div>
+    <div class="actions"><button class="btn btn-primary" id="ex1-check">Check</button><span class="score" id="ex1-score"></span></div>
+  </section>
+
+  <section class="exercise" id="ex2">
+    <span class="count">Exercise 2 of 2</span>
+    <h2>The launch angle gets bigger. What happens to v<sub>x</sub>?</h2>
+    <div class="options" role="group" aria-label="Answer options">
+      <button class="option" data-answer="up">It gets bigger</button>
+      <button class="option" data-answer="down">It gets smaller</button>
+      <button class="option" data-answer="same">It stays the same</button>
+    </div>
+    <div id="ex2-feedback"></div>
+  </section>
+
+  <section class="exercise">
+    <h2>In your own words: why does a steeper throw go less far sideways?</h2>
+    <div class="field"><label for="why" class="label">Your explanation</label><textarea class="input" id="why"></textarea></div>
+    <div class="actions"><button class="btn" id="why-send">Send to Athena</button><span class="score" id="why-note"></span></div>
+  </section>
+
+  <div class="lesson-foot">
+    <button class="btn btn-primary" id="finish">Finish lesson</button>
+    <span>Questions? Ask the tutor on the right.</span>
+  </div>
+  <div id="done"></div>
+</main>
+
+<script>
+  // Every graded or gradable interaction goes to Athena through learn.submit.
+  const near = (a, b) => Math.abs(a - b) <= 0.2;
+  const show = (el, cls, text) => { el.innerHTML = ""; const p = document.createElement("p"); p.className = cls; p.textContent = text; el.append(p); };
+
+  document.getElementById("ex1-check").addEventListener("click", () => {
+    const vx = parseFloat(document.getElementById("vx").value), vy = parseFloat(document.getElementById("vy").value);
+    const okx = near(vx, 16.4), oky = near(vy, 11.5);
+    document.getElementById("vx").className = "input " + (okx ? "is-correct" : "is-wrong");
+    document.getElementById("vy").className = "input " + (oky ? "is-correct" : "is-wrong");
+    const fb = document.getElementById("ex1-feedback");
+    if (okx && oky) show(fb, "feedback ok", "Both right. 20 · cos 35° ≈ 16.4 and 20 · sin 35° ≈ 11.5.");
+    else if (near(vy, 14.1) || near(vx, 13.7)) { show(fb, "feedback bad", "Not yet."); fb.insertAdjacentHTML("beforeend", '<p class="hint">Check that your calculator is in degrees: sin 35° ≈ 0.574, so v<sub>y</sub> ≈ 11.5 m/s.</p>'); }
+    else show(fb, "feedback bad", "Not yet. Which side is next to the angle, and which is opposite?");
+    learn.submit({ itemId: "ex1", prompt: "20 m/s at 35°: find vx and vy", answer: { vx, vy }, correct: okx && oky });
+  });
+
+  document.querySelectorAll("#ex2 .option").forEach((b) => b.addEventListener("click", () => {
+    const ok = b.dataset.answer === "down";
+    document.querySelectorAll("#ex2 .option").forEach((o) => { o.className = "option"; o.disabled = true; });
+    b.classList.add(ok ? "is-correct" : "is-wrong");
+    show(document.getElementById("ex2-feedback"), "feedback " + (ok ? "ok" : "bad"),
+      ok ? "Right: more of the speed goes up, so less goes sideways." : "Not quite: cos θ falls as θ rises, so less of the speed goes sideways.");
+    learn.submit({ itemId: "ex2", prompt: "Angle increases: what happens to vx?", answer: b.dataset.answer, correct: ok });
+  }));
+
+  document.getElementById("why-send").addEventListener("click", () => {
+    const text = document.getElementById("why").value.trim();
+    if (!text) return;
+    learn.submit({ itemId: "why", prompt: "Why does a steeper throw go less far sideways?", answer: text, correct: null });
+    document.getElementById("why-note").textContent = "Sent. Athena reads it before your next lesson.";
+  });
+
+  document.getElementById("finish").addEventListener("click", () => {
+    learn.complete({ summary: "Finished lesson 2" });
+    document.getElementById("done").innerHTML = '<div class="done-card"><p><strong>Lesson finished.</strong> Athena is preparing the next lesson from your answers.</p></div>';
+  });
+</script>
+</body>
+</html>

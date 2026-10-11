@@ -1,0 +1,17 @@
+node_modules
+dist
+data
+.DS_Store
+bun.lock
+
+# Local test output
+.tmp-*
+.playwright-mcp
+
+# Design process artifacts (keep the surface brief and the design sidecar)
+.impeccable/*
+!.impeccable/surfaces
+!.impeccable/design.json
+
+# Third-party HyperFrames skills, copied in by `npm run sync-skills`
+agent/plugin/skills/hyperframes*

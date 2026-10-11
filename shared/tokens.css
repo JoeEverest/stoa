@@ -1,0 +1,126 @@
+/*
+ * Stoa design tokens. One source for the React app and for lesson pages.
+ * Lessons get this file through /stoa/lesson.css (the server injects it).
+ * Light is the default. Dark applies only when the user chooses it (data-theme on <html>).
+ */
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #ffffff;
+  --surface-2: #f7f7f8;        /* rails, tutor, quiet panels */
+  --surface-3: #eeeef0;        /* hover on surface-2, wells */
+  --line: #e6e6e9;
+  --line-strong: #d4d4d8;
+
+  /* Ink ladder */
+  --ink-1: #0f0f11;
+  --ink-2: #3f4048;
+  --ink-3: #62636b;            /* secondary text, still AA on white and surface-2 */
+  --ink-4: #a1a1aa;            /* decoration only, never text */
+
+  /* Accent: primary actions, current selection, focus, progress */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-ink: #1d4ed8;
+  --accent-soft: #eef3fe;
+  --accent-line: #c7d7fb;
+  --on-accent: #ffffff;
+
+  /* States */
+  --ok: #15803d;
+  --ok-soft: #effaf2;
+  --ok-line: #9fd8b1;
+  --ok-ink: #14532d;
+  --bad: #b91c1c;
+  --bad-soft: #fdf2f2;
+  --bad-line: #f1a9a9;
+  --bad-ink: #5c1515;
+  --warn: #a16207;
+  --warn-soft: #fef8e7;
+  --warn-ink: #4d3305;
+
+  /* Topic look: a topic may override these in library/topic.css. They default to the app accent.
+     Used for lesson accents (callouts, step numbers, terms), never for UI state or the primary button. */
+  --topic: var(--accent);
+  --topic-soft: var(--accent-soft);
+  --topic-ink: var(--accent-ink);
+
+  /* Diagram palette (figures, charts, video posters). Not for UI state. */
+  --viz-1: #2563eb;
+  --viz-2: #e5484d;
+  --viz-3: #12a594;
+  --viz-4: #d97706;
+  --viz-5: #8e4ec6;
+
+  /* Type */
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Noto Sans", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --math: "STIX Two Math", "Cambria Math", "Times New Roman", Times, serif;
+
+  --text-xs: 0.75rem;    /* 12 / 16  captions, meta */
+  --text-sm: 0.8125rem;  /* 13 / 18  secondary UI */
+  --text-ui: 0.875rem;   /* 14 / 20  controls, lists, chat */
+  --text-body: 1.0625rem;/* 17 / 28  lesson body */
+  --text-lede: 1.1875rem;/* 19 / 30  lesson lede */
+  --text-h3: 1.375rem;   /* 22 / 28  lesson section */
+  --text-h2: 2rem;       /* 32 / 40  lesson title */
+
+  /* Space (px scale: 4 8 12 16 24 32 48 64) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* Shape and depth */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --shadow-1: 0 1px 2px rgba(15, 15, 17, 0.05);
+  --shadow-2: 0 4px 12px rgba(15, 15, 17, 0.08), 0 1px 3px rgba(15, 15, 17, 0.06);
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --field-ring: 0 0 0 3px rgba(37, 99, 235, 0.18);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --t-press: 160ms;
+  --t-fast: 120ms;
+  --t-state: 200ms;
+  --t-enter: 320ms;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161618;
+  --surface-2: #1d1d20;
+  --surface-3: #26262a;
+  --line: #2e2e33;
+  --line-strong: #3d3d43;
+  --ink-1: #ededef;
+  --ink-2: #c4c4c9;
+  --ink-3: #9b9ba3;
+  --ink-4: #66666e;
+  --accent: #4f86f7;
+  --accent-hover: #6a98f8;
+  --accent-ink: #8fb1fa;
+  --accent-soft: #1a2540;
+  --accent-line: #2c406e;
+  --on-accent: #0b1020;
+  --ok: #4cc27a;
+  --ok-soft: #12261b;
+  --ok-line: #23573a;
+  --ok-ink: #a6e3bd;
+  --bad: #f2756f;
+  --bad-soft: #2c1615;
+  --bad-line: #6a2a27;
+  --bad-ink: #f6c2bf;
+  --warn: #e0a83a;
+  --warn-soft: #2a2110;
+  --warn-ink: #f0d8a6;
+  --viz-1: #6a98f8;
+  --viz-2: #f2756f;
+  --viz-3: #3cc9b4;
+  --viz-4: #f0a43a;
+  --viz-5: #b38ae0;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 6px 16px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --field-ring: 0 0 0 3px rgba(79, 134, 247, 0.3);
+}

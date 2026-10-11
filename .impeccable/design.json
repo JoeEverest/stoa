@@ -1,0 +1,800 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-11T01:34:54.164Z",
+  "title": "Design System: Stoa",
+  "extensions": {
+    "source": "shared/tokens.css (custom properties on :root; dark values under :root[data-theme=\"dark\"]). Lesson kit: shared/lesson.css. Agent rules: agent/plugin/skills/teach/STYLE-GUIDE.md.",
+    "themes": {
+      "default": "light",
+      "dark": "applies only by explicit user choice via data-theme=\"dark\" on <html>"
+    },
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "cssVar": "--bg",
+        "dark": "#161618",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "surface-2": {
+        "role": "neutral",
+        "displayName": "Rail Grey",
+        "cssVar": "--surface-2",
+        "dark": "#1d1d20",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "surface-3": {
+        "role": "neutral",
+        "displayName": "Well Grey",
+        "cssVar": "--surface-3",
+        "dark": "#26262a",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "cssVar": "--line",
+        "dark": "#2e2e33",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "line-strong": {
+        "role": "neutral",
+        "displayName": "Strong Hairline",
+        "cssVar": "--line-strong",
+        "dark": "#3d3d43",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "ink-1": {
+        "role": "neutral",
+        "displayName": "Ink 1",
+        "cssVar": "--ink-1",
+        "dark": "#ededef",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "cssVar": "--ink-2",
+        "dark": "#c4c4c9",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "cssVar": "--ink-3",
+        "dark": "#9b9ba3",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "ink-4": {
+        "role": "neutral",
+        "displayName": "Ink 4 (decoration only)",
+        "cssVar": "--ink-4",
+        "dark": "#66666e",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Study Blue",
+        "cssVar": "--accent",
+        "dark": "#4f86f7",
+        "tonalRamp": [
+          "#172554",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#bfdbfe",
+          "#eef3fe"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Deep Study Blue",
+        "cssVar": "--accent-hover",
+        "dark": "#6a98f8",
+        "tonalRamp": [
+          "#172554",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#bfdbfe",
+          "#eef3fe"
+        ]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "Deep Study Blue (text)",
+        "cssVar": "--accent-ink",
+        "dark": "#8fb1fa",
+        "tonalRamp": [
+          "#172554",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#bfdbfe",
+          "#eef3fe"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Blue Wash",
+        "cssVar": "--accent-soft",
+        "dark": "#1a2540",
+        "tonalRamp": [
+          "#172554",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#bfdbfe",
+          "#eef3fe"
+        ]
+      },
+      "accent-line": {
+        "role": "primary",
+        "displayName": "Blue Hairline",
+        "cssVar": "--accent-line",
+        "dark": "#2c406e",
+        "tonalRamp": [
+          "#172554",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#bfdbfe",
+          "#eef3fe"
+        ]
+      },
+      "on-accent": {
+        "role": "primary",
+        "displayName": "On Blue",
+        "cssVar": "--on-accent",
+        "dark": "#0b1020",
+        "tonalRamp": [
+          "#0f0f11",
+          "#3f4048",
+          "#62636b",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#e6e6e9",
+          "#eeeef0",
+          "#f7f7f8"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Right Green",
+        "cssVar": "--ok",
+        "dark": "#4cc27a",
+        "tonalRamp": [
+          "#052e16",
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#4ade80",
+          "#9fd8b1",
+          "#effaf2"
+        ]
+      },
+      "ok-soft": {
+        "role": "tertiary",
+        "displayName": "Right Green Wash",
+        "cssVar": "--ok-soft",
+        "dark": "#12261b",
+        "tonalRamp": [
+          "#052e16",
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#4ade80",
+          "#9fd8b1",
+          "#effaf2"
+        ]
+      },
+      "ok-line": {
+        "role": "tertiary",
+        "displayName": "Right Green Hairline",
+        "cssVar": "--ok-line",
+        "dark": "#23573a",
+        "tonalRamp": [
+          "#052e16",
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#4ade80",
+          "#9fd8b1",
+          "#effaf2"
+        ]
+      },
+      "ok-ink": {
+        "role": "tertiary",
+        "displayName": "Right Green Ink",
+        "cssVar": "--ok-ink",
+        "dark": "#a6e3bd",
+        "tonalRamp": [
+          "#052e16",
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#4ade80",
+          "#9fd8b1",
+          "#effaf2"
+        ]
+      },
+      "bad": {
+        "role": "tertiary",
+        "displayName": "Wrong Red",
+        "cssVar": "--bad",
+        "dark": "#f2756f",
+        "tonalRamp": [
+          "#450a0a",
+          "#5c1515",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#f1a9a9",
+          "#fdf2f2"
+        ]
+      },
+      "bad-soft": {
+        "role": "tertiary",
+        "displayName": "Wrong Red Wash",
+        "cssVar": "--bad-soft",
+        "dark": "#2c1615",
+        "tonalRamp": [
+          "#450a0a",
+          "#5c1515",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#f1a9a9",
+          "#fdf2f2"
+        ]
+      },
+      "bad-line": {
+        "role": "tertiary",
+        "displayName": "Wrong Red Hairline",
+        "cssVar": "--bad-line",
+        "dark": "#6a2a27",
+        "tonalRamp": [
+          "#450a0a",
+          "#5c1515",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#f1a9a9",
+          "#fdf2f2"
+        ]
+      },
+      "bad-ink": {
+        "role": "tertiary",
+        "displayName": "Wrong Red Ink",
+        "cssVar": "--bad-ink",
+        "dark": "#f6c2bf",
+        "tonalRamp": [
+          "#450a0a",
+          "#5c1515",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#f1a9a9",
+          "#fdf2f2"
+        ]
+      },
+      "warn": {
+        "role": "tertiary",
+        "displayName": "Hint Amber",
+        "cssVar": "--warn",
+        "dark": "#e0a83a",
+        "tonalRamp": [
+          "#422006",
+          "#4d3305",
+          "#854d0e",
+          "#a16207",
+          "#ca8a04",
+          "#facc15",
+          "#fef08a",
+          "#fef8e7"
+        ]
+      },
+      "warn-soft": {
+        "role": "tertiary",
+        "displayName": "Hint Amber Wash",
+        "cssVar": "--warn-soft",
+        "dark": "#2a2110",
+        "tonalRamp": [
+          "#422006",
+          "#4d3305",
+          "#854d0e",
+          "#a16207",
+          "#ca8a04",
+          "#facc15",
+          "#fef08a",
+          "#fef8e7"
+        ]
+      },
+      "warn-ink": {
+        "role": "tertiary",
+        "displayName": "Hint Amber Ink",
+        "cssVar": "--warn-ink",
+        "dark": "#f0d8a6",
+        "tonalRamp": [
+          "#422006",
+          "#4d3305",
+          "#854d0e",
+          "#a16207",
+          "#ca8a04",
+          "#facc15",
+          "#fef08a",
+          "#fef8e7"
+        ]
+      },
+      "viz-1": {
+        "role": "diagram",
+        "displayName": "Series Blue",
+        "cssVar": "--viz-1",
+        "dark": "#6a98f8",
+        "tonalRamp": [
+          "#172554",
+          "#1e40af",
+          "#1d4ed8",
+          "#2563eb",
+          "#3b82f6",
+          "#60a5fa",
+          "#bfdbfe",
+          "#eef3fe"
+        ]
+      },
+      "viz-2": {
+        "role": "diagram",
+        "displayName": "Series Red",
+        "cssVar": "--viz-2",
+        "dark": "#f2756f",
+        "tonalRamp": [
+          "oklch(15% 0.19 22)",
+          "oklch(25% 0.19 22)",
+          "oklch(35% 0.19 22)",
+          "oklch(45% 0.19 22)",
+          "oklch(55% 0.19 22)",
+          "oklch(65% 0.19 22)",
+          "oklch(80% 0.19 22)",
+          "oklch(95% 0.03 22)"
+        ]
+      },
+      "viz-3": {
+        "role": "diagram",
+        "displayName": "Series Teal",
+        "cssVar": "--viz-3",
+        "dark": "#3cc9b4",
+        "tonalRamp": [
+          "oklch(15% 0.12 180)",
+          "oklch(25% 0.12 180)",
+          "oklch(35% 0.12 180)",
+          "oklch(45% 0.12 180)",
+          "oklch(55% 0.12 180)",
+          "oklch(65% 0.12 180)",
+          "oklch(80% 0.12 180)",
+          "oklch(95% 0.03 180)"
+        ]
+      },
+      "viz-4": {
+        "role": "diagram",
+        "displayName": "Series Amber",
+        "cssVar": "--viz-4",
+        "dark": "#f0a43a",
+        "tonalRamp": [
+          "oklch(15% 0.16 60)",
+          "oklch(25% 0.16 60)",
+          "oklch(35% 0.16 60)",
+          "oklch(45% 0.16 60)",
+          "oklch(55% 0.16 60)",
+          "oklch(65% 0.16 60)",
+          "oklch(80% 0.16 60)",
+          "oklch(95% 0.03 60)"
+        ]
+      },
+      "viz-5": {
+        "role": "diagram",
+        "displayName": "Series Violet",
+        "cssVar": "--viz-5",
+        "dark": "#b38ae0",
+        "tonalRamp": [
+          "oklch(15% 0.17 305)",
+          "oklch(25% 0.17 305)",
+          "oklch(35% 0.17 305)",
+          "oklch(45% 0.17 305)",
+          "oklch(55% 0.17 305)",
+          "oklch(65% 0.17 305)",
+          "oklch(80% 0.17 305)",
+          "oklch(95% 0.03 305)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Lesson title and New topic title; one per page."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Lesson sections (h2)."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Lesson subsections (h3). App top bar topic title is 20px/28px 600."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "Paragraph after the lesson title, Ink 2, 64ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Lesson reading text at 68ch."
+      },
+      "ui": {
+        "displayName": "UI",
+        "purpose": "Controls, lists, chat, tables; tabular numerals."
+      },
+      "secondary": {
+        "displayName": "Secondary",
+        "purpose": "Status lines, captions, meta lines, Ink 3."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Sentence-case group labels and list meta, Ink 3."
+      },
+      "mono": {
+        "displayName": "Mono",
+        "purpose": "Code, inline and block."
+      },
+      "math": {
+        "displayName": "Math",
+        "purpose": "Formula blocks and inline math only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-1",
+        "value": "0 1px 2px rgba(15, 15, 17, 0.05)",
+        "dark": "0 1px 2px rgba(0, 0, 0, 0.4)",
+        "purpose": "Control lift: secondary buttons, composer, current topic row, selected theme button."
+      },
+      {
+        "name": "shadow-2",
+        "value": "0 4px 12px rgba(15, 15, 17, 0.08), 0 1px 3px rgba(15, 15, 17, 0.06)",
+        "dark": "0 6px 16px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4)",
+        "purpose": "Float: toast and video play button only."
+      },
+      {
+        "name": "ring",
+        "value": "0 0 0 2px var(--bg), 0 0 0 4px var(--accent)",
+        "purpose": "Focus ring on every :focus-visible."
+      },
+      {
+        "name": "field-ring",
+        "value": "0 0 0 3px rgba(37, 99, 235, 0.18)",
+        "dark": "0 0 0 3px rgba(79, 134, 247, 0.3)",
+        "purpose": "Focused inputs and composer, with an accent border."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.23, 1, 0.32, 1)",
+        "purpose": "The one curve for presses, state changes and entrances."
+      },
+      {
+        "name": "ease-in-out",
+        "value": "cubic-bezier(0.77, 0, 0.175, 1)",
+        "purpose": "Looping indeterminate bar in the video-wait state only."
+      },
+      {
+        "name": "t-press",
+        "value": "160ms",
+        "purpose": "Button press: scale(0.97) (options 0.99, video play 0.95)."
+      },
+      {
+        "name": "t-fast",
+        "value": "120ms",
+        "purpose": "Hover color, background and border changes."
+      },
+      {
+        "name": "t-state",
+        "value": "200ms",
+        "purpose": "State changes: feedback and hint rise, chevron and details rotation, chat message rise."
+      },
+      {
+        "name": "t-enter",
+        "value": "320ms",
+        "purpose": "Entrances for items that arrive while the view is open: new lesson row, toast, done card, video frame fade."
+      },
+      {
+        "name": "segment-fill",
+        "value": "520ms ease-out",
+        "purpose": "Progress segment fill."
+      },
+      {
+        "name": "check-draw",
+        "value": "420ms ease-out, 120ms delay",
+        "purpose": "Tick draws in once when a lesson becomes done."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Entrances become opacity fades; press scale, hatch crawl, typing dots and sliding bar stop; spinner slows to 1.6s."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow-desktop",
+        "value": "1180px",
+        "note": "Lesson list 220px, tutor 300px."
+      },
+      {
+        "name": "mobile",
+        "value": "860px",
+        "note": "Rail becomes a two-row top bar; workspace becomes one scrolling column (outline toggle, lesson 78vh, tutor 70vh)."
+      },
+      {
+        "name": "lesson-compact",
+        "value": "640px",
+        "note": "Lesson padding drops to 32/16/48px."
+      }
+    ],
+    "layout": {
+      "rail": "240px",
+      "lessonList": "240px",
+      "tutor": "340px",
+      "lessonMaxWidth": "680px",
+      "readingMeasure": "68ch",
+      "topbarMinHeight": "72px"
+    },
+    "icons": "One family in web/src/icons.tsx: 16px grid, 1.5 stroke, round caps and joins, currentColor, inline SVG."
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action of a view or an exercise, such as Next lesson or Check.",
+      "html": "<button class=\"ds-btn-primary\">Next lesson<svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3.5 8h9M9 4.5 12.5 8 9 11.5\"/></svg></button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:var(--s-2);height:36px;padding:0 14px;border-radius:var(--r-md);border:1px solid transparent;font:500 var(--text-ui)/1 var(--font);cursor:pointer;transition:transform var(--t-press) var(--ease-out),background-color var(--t-fast) ease,border-color var(--t-fast) ease;background:var(--accent);color:var(--on-accent);box-shadow:0 1px 2px color-mix(in srgb,var(--accent) 30%,transparent);} .ds-btn-primary:hover{background:var(--accent-hover);} .ds-btn-primary:active{transform:scale(0.97);} .ds-btn-primary:focus-visible{outline:none;box-shadow:var(--ring);}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "All other actions: New topic, Hide tutor, lesson buttons that are not the main action.",
+      "html": "<button class=\"ds-btn-secondary\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M8 3.5v9M3.5 8h9\"/></svg>New topic</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:var(--s-2);height:36px;padding:0 14px;border-radius:var(--r-md);border:1px solid transparent;font:500 var(--text-ui)/1 var(--font);cursor:pointer;transition:transform var(--t-press) var(--ease-out),background-color var(--t-fast) ease,border-color var(--t-fast) ease;background:var(--bg);border-color:var(--line-strong);color:var(--ink-1);box-shadow:var(--shadow-1);} .ds-btn-secondary:hover{background:var(--surface-2);border-color:var(--ink-4);} .ds-btn-secondary:active{transform:scale(0.97);} .ds-btn-secondary:focus-visible{outline:none;box-shadow:var(--ring);}"
+    },
+    {
+      "name": "Waiting Button",
+      "kind": "button",
+      "refersTo": "button-waiting",
+      "description": "Takes the place of the primary action while Athena builds; it says what is in progress.",
+      "html": "<span class=\"ds-btn-waiting\" role=\"status\"><svg class=\"ds-spin\" width=\"14\" height=\"14\" viewBox=\"0 0 16 16\" aria-hidden=\"true\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"none\" stroke=\"currentColor\" stroke-opacity=\"0.2\" stroke-width=\"2\"/><path d=\"M8 2a6 6 0 0 1 6 6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg>Next lesson in progress</span>",
+      "css": ".ds-btn-waiting{display:inline-flex;align-items:center;justify-content:center;gap:var(--s-2);height:36px;padding:0 14px;border-radius:var(--r-md);border:1px solid transparent;font:500 var(--text-ui)/1 var(--font);cursor:pointer;transition:transform var(--t-press) var(--ease-out),background-color var(--t-fast) ease,border-color var(--t-fast) ease;cursor:default;background:var(--surface-2);border-color:var(--line);color:var(--ink-2);} .ds-spin{color:var(--accent);animation:ds-spin .8s linear infinite;} @keyframes ds-spin{to{transform:rotate(360deg);}} @media (prefers-reduced-motion:reduce){.ds-spin{animation-duration:1.6s;}}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Lesson answer field with a visible label; turns green or red after a check.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-a\">Horizontal speed (m/s)</label><input id=\"ds-a\" class=\"ds-input\" value=\"17.3\"></div>",
+      "css": ".ds-field label{display:block;margin-bottom:var(--s-2);font:500 var(--text-ui)/1.4 var(--font);color:var(--ink-2);} .ds-input{width:100%;min-height:44px;padding:0 var(--s-3);border-radius:var(--r-md);border:1px solid var(--line-strong);background:var(--bg);color:var(--ink-1);font:500 1rem/1.4 var(--font);font-variant-numeric:tabular-nums;transition:border-color var(--t-fast) ease,box-shadow var(--t-fast) ease;} .ds-input:hover{border-color:var(--ink-4);} .ds-input:focus{outline:none;border-color:var(--accent);box-shadow:var(--field-ring);}"
+    },
+    {
+      "name": "Multiple-choice Option",
+      "kind": "custom",
+      "refersTo": "option",
+      "description": "Full-width answer row; selected, correct and wrong states use soft washes.",
+      "html": "<div class=\"ds-options\"><button class=\"ds-option\">sin θ gives the vertical part</button><button class=\"ds-option is-selected\">cos θ gives the horizontal part</button></div>",
+      "css": ".ds-options{display:grid;gap:var(--s-2);} .ds-option{display:flex;align-items:center;width:100%;text-align:left;min-height:48px;padding:var(--s-3) var(--s-4);border-radius:var(--r-md);border:1px solid var(--line-strong);background:var(--bg);color:var(--ink-1);font:400 1rem/1.5 var(--font);cursor:pointer;transition:transform var(--t-press) var(--ease-out),border-color var(--t-fast) ease,background-color var(--t-fast) ease;} .ds-option:hover{border-color:var(--ink-4);background:var(--surface-2);} .ds-option:active{transform:scale(0.99);} .ds-option:focus-visible{outline:none;box-shadow:var(--ring);} .ds-option.is-selected{border-color:var(--accent);background:var(--accent-soft);}"
+    },
+    {
+      "name": "Topic Rail",
+      "kind": "nav",
+      "refersTo": "rail",
+      "description": "Left rail topic list; the current topic is lifted onto paper, a busy topic shows Athena's state in blue.",
+      "html": "<nav class=\"ds-rail\"><div class=\"ds-rail-label\">Topics</div><a class=\"ds-topic\" aria-current=\"page\" href=\"#\"><span class=\"ds-dot\"></span><span class=\"ds-topic-name\">Projectile motion</span><span class=\"ds-topic-meta\">Athena is working</span></a><a class=\"ds-topic\" href=\"#\"><span class=\"ds-dot\"></span><span class=\"ds-topic-name\">Program an ESP32</span><span class=\"ds-topic-meta\">Getting started</span></a></nav>",
+      "css": ".ds-rail{width:240px;padding:var(--s-3);background:var(--surface-2);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px;font:400 var(--text-ui)/1.43 var(--font);color:var(--ink-1);} .ds-rail-label{margin:0 var(--s-2) var(--s-1);font-size:var(--text-xs);font-weight:500;color:var(--ink-3);} .ds-topic{display:grid;grid-template-columns:16px minmax(0,1fr);column-gap:var(--s-2);align-items:center;padding:var(--s-2);border-radius:var(--r-md);color:inherit;text-decoration:none;transition:background-color var(--t-fast) ease;} .ds-topic:hover{background:var(--surface-3);} .ds-topic:focus-visible{outline:none;box-shadow:var(--ring);} .ds-topic[aria-current=\"page\"]{background:var(--bg);box-shadow:0 0 0 1px var(--line),var(--shadow-1);} .ds-dot{width:6px;height:6px;border-radius:50%;background:var(--ink-4);justify-self:center;} .ds-topic[aria-current=\"page\"] .ds-dot{background:var(--accent);} .ds-topic-name{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .ds-topic-meta{grid-column:2;font-size:var(--text-xs);line-height:16px;color:var(--ink-3);} .ds-topic[aria-current=\"page\"] .ds-topic-meta{color:var(--accent-ink);}"
+    },
+    {
+      "name": "Segmented Progress Bar",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Signature: one segment per lesson; done fills blue, current is a blue wash, a lesson in progress is a crawling hatch.",
+      "html": "<span class=\"ds-segbar\" aria-hidden=\"true\"><span class=\"ds-seg done\"><i></i></span><span class=\"ds-seg current\"><i></i></span><span class=\"ds-seg building\"></span></span>",
+      "css": ".ds-segbar{display:inline-flex;gap:4px;} .ds-seg{position:relative;width:36px;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden;} .ds-seg i{position:absolute;inset:0;border-radius:3px;background:var(--accent);transform:scaleX(0);transform-origin:left center;transition:transform 520ms var(--ease-out);} .ds-seg.done i{transform:scaleX(1);} .ds-seg.current{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-line);} .ds-seg.building{background-image:repeating-linear-gradient(-45deg,transparent 0 4px,color-mix(in srgb,var(--ink-3) 28%,transparent) 4px 6px);background-size:17px 6px;animation:ds-crawl 1.2s linear infinite;} @keyframes ds-crawl{to{background-position:17px 0;}} @media (prefers-reduced-motion:reduce){.ds-seg.building{animation:none;}}"
+    },
+    {
+      "name": "Mission Callout",
+      "kind": "card",
+      "refersTo": "callout",
+      "description": "Blue-wash key-idea box in a lesson; the lead phrase is bold blue ink.",
+      "html": "<div class=\"ds-callout\"><p><strong>Why this matters for your mission.</strong> These are the first two lines of every trajectory program.</p></div>",
+      "css": ".ds-callout{padding:var(--s-4);border-radius:var(--r-lg);background:var(--accent-soft);color:var(--ink-1);font:400 0.9375rem/1.6 var(--font);max-width:680px;} .ds-callout p{margin:0;} .ds-callout strong{font-weight:600;color:var(--accent-ink);}"
+    },
+    {
+      "name": "Exercise with Feedback",
+      "kind": "card",
+      "refersTo": "exercise",
+      "description": "Bordered exercise block with a count, a question, one primary Check action and an icon-plus-words feedback line.",
+      "html": "<section class=\"ds-ex\"><span class=\"ds-count\">Exercise 1 of 3</span><h3>Which part does cos θ give?</h3><div class=\"ds-actions\"><button class=\"ds-check\">Check</button></div><p class=\"ds-fb\">Right: cos θ scales the launch speed onto the ground line.</p></section>",
+      "css": ".ds-ex{padding:var(--s-5);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg);color:var(--ink-1);font:400 var(--text-body)/1.65 var(--font);max-width:680px;} .ds-ex h3{margin:0;font-size:var(--text-body);line-height:1.5;font-weight:600;} .ds-count{float:right;margin-left:var(--s-4);font-size:var(--text-sm);color:var(--ink-3);font-variant-numeric:tabular-nums;} .ds-actions{margin-top:var(--s-5);} .ds-check{display:inline-flex;align-items:center;min-height:40px;padding:0 var(--s-4);border-radius:var(--r-md);border:1px solid transparent;background:var(--accent);color:var(--on-accent);font:500 var(--text-ui)/1 var(--font);cursor:pointer;transition:transform var(--t-press) var(--ease-out),background-color var(--t-fast) ease;} .ds-check:hover{background:var(--accent-hover);} .ds-check:active{transform:scale(0.97);} .ds-check:focus-visible{outline:none;box-shadow:var(--ring);} .ds-fb{margin:var(--s-3) 0 0;display:flex;gap:var(--s-2);color:var(--ok);font-size:0.9375rem;line-height:1.55;font-weight:500;} .ds-fb::before{content:\"\";flex:none;width:18px;height:18px;margin-top:2px;background:currentColor;-webkit-mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M4 10.5l4 4 8-9' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\") center/contain no-repeat;mask:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M4 10.5l4 4 8-9' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\") center/contain no-repeat;}"
+    },
+    {
+      "name": "Tutor Composer",
+      "kind": "input",
+      "refersTo": "composer",
+      "description": "Chat composer for the tutor and intake; takes the accent border and field ring on focus.",
+      "html": "<div class=\"ds-composer\"><textarea rows=\"2\" placeholder=\"Ask the tutor\"></textarea><div class=\"ds-row\"><button class=\"ds-send\" aria-label=\"Send\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 12.5v-9M4.5 7 8 3.5 11.5 7\"/></svg></button></div></div>",
+      "css": ".ds-composer{width:320px;background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--r-lg);padding:var(--s-3);box-shadow:var(--shadow-1);transition:border-color var(--t-fast) ease,box-shadow var(--t-fast) ease;} .ds-composer:focus-within{border-color:var(--accent);box-shadow:var(--field-ring);} .ds-composer textarea{display:block;width:100%;border:0;resize:none;outline:none;background:transparent;color:var(--ink-1);font:400 var(--text-ui)/20px var(--font);} .ds-composer textarea::placeholder{color:var(--ink-3);} .ds-row{display:flex;justify-content:flex-end;margin-top:var(--s-2);} .ds-send{width:30px;height:30px;border-radius:var(--r-md);border:0;background:var(--ink-1);color:var(--bg);display:grid;place-items:center;cursor:pointer;transition:transform var(--t-press) var(--ease-out),opacity var(--t-fast) ease;} .ds-send:hover{opacity:0.85;} .ds-send:active{transform:scale(0.97);} .ds-send:focus-visible{outline:none;box-shadow:var(--ring);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Frame",
+    "overview": "Stoa is the category standard for a learning tool, executed at full craft, with no metaphor and no themed world. The app is a quiet frame. The lesson in the centre column is the product, and every other surface steps back from it. The craft bar is Brilliant.org, Claude.ai and Notion: white paper, a near-black three-step ink ladder, hairline borders, and one confident blue that appears only where it means something.\n\nThe density is that of a work tool, not a marketing page. App chrome uses 14px text and 36px controls. The lesson uses 17px body text at a 68-character measure, so the learner can read for an hour. Progress, waiting and Athena's status are always visible and always specific. Waiting is calm: hatched segments, a slow spinner, a sentence about what Athena does now.\n\nApp and lessons share one token file (`shared/tokens.css`). Agent-written lesson pages get the same tokens and a lesson kit (`shared/lesson.css`), so a lesson looks like part of the app. The agent-facing rules for lesson markup live in `agent/plugin/skills/teach/STYLE-GUIDE.md`. This file does not repeat them.\n\nLight mode is the default. Dark mode applies only when the user chooses it with the appearance switch (`data-theme=\"dark\"` on `<html>`). Every token has a dark counterpart (see `.impeccable/design.json`).",
+    "keyCharacteristics": [
+      "White surfaces, a cool off-white second layer for rails and the tutor, 1px hairlines.",
+      "One blue accent for primary actions, current selection, focus and progress only.",
+      "System font stack, a fixed rem type scale, tabular numerals everywhere in the UI.",
+      "8px radius on controls, 12px on panels and lesson blocks.",
+      "Near-flat: two small shadows, used on controls and floating items, never on content cards.",
+      "Short, purposeful motion on one ease-out curve; reduced motion falls back to fades."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Blue marks an action, the current place, focus, or progress. If a blue element is none of these, it is wrong.",
+        "section": "colors"
+      },
+      {
+        "name": "The Token-Only Rule",
+        "body": "Lessons and app code read colors from tokens, never hard-coded hex values, so dark mode works. The only exception is the black letterbox behind a started video.",
+        "section": "colors"
+      },
+      {
+        "name": "The Decoration Ink Rule",
+        "body": "Ink 4 is for dots, rings and separators. Text uses Ink 1, 2 or 3.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sentence Case Rule",
+        "body": "All labels are sentence case, with no uppercase tracking. No label or kicker sits above a heading. The lesson meta line holds facts only (lesson number, time, topic).",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "UI numerals are tabular (`font-variant-numeric: tabular-nums`), so counts and scores do not shift.",
+        "section": "typography"
+      },
+      {
+        "name": "The Measure Rule",
+        "body": "Reading text never runs wider than 68ch.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Content Rule",
+        "body": "Content blocks (callouts, exercises, code, formulas, details, the video frame) have a border or a tint, never a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do read every color, space and radius from `shared/tokens.css`; lessons follow `agent/plugin/skills/teach/STYLE-GUIDE.md`.",
+      "Do keep blue for actions, the current place, focus and progress (The One Voice Rule).",
+      "Do give every waiting state a specific sentence about what Athena does now.",
+      "Do put 8px radius on controls and 12px on panels and lesson blocks.",
+      "Do use the 160ms press scale (0.97) on buttons and the 4px rise only for items that arrive while the view is open.",
+      "Do pair every color signal with an icon or words (feedback ticks and crosses, status text).",
+      "Do keep reading text at 68ch or less."
+    ],
+    "donts": [
+      "Don't add a course-catalog dashboard: card grids, streaks, badges or hero metrics.",
+      "Don't put shadows on content blocks; shadows belong to controls and floating items only.",
+      "Don't use decorative gradients or textures. The hatched \"being built\" segment and the video-wait bar are state signals, not decoration.",
+      "Don't add colored side stripes. A neutral left rule (Strong Hairline on blockquotes, Hairline on chat activity lines) is part of the system.",
+      "Don't place a label, kicker or eyebrow above a heading, and don't use uppercase tracked labels.",
+      "Don't use emoji or text glyphs as icons; use the 16px stroke icon family.",
+      "Don't set fonts or a page background inside a lesson, and don't load other font files.",
+      "Don't open the app in dark mode by default."
+    ]
+  }
+}
