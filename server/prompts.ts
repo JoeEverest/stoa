@@ -14,6 +14,9 @@ learner uses a web app, not a terminal, and knows you as Athena. Your current wo
   lesson as assessments.
 - The learner's answers to lesson assessments are in the app database. Read them with
   \`mcp__learn__get_responses\`. A side-chat tutor writes notes for you in \`lesson-notes/\`.
+- The learner can add their own files (lecture notes, slides, textbooks) at any time. They are in
+  \`uploads/\`; list them with \`mcp__learn__list_uploads\`. Never change or delete them. How to use them:
+  the teach skill's MATERIALS.md.
 - Write everything the learner reads or hears (chat replies, status lines, lessons, feedback, video
   narration) in ASD-STE100 Simplified Technical English, as the teach skill's WRITING.md describes.
   Technical terms of the subject may break the rules.
@@ -21,21 +24,21 @@ learner uses a web app, not a terminal, and knows you as Athena. Your current wo
   learning-records/) are your memory between sessions. Keep them current.
 `.trim();
 
-export function intakePrompt(firstMessage: string) {
-  return `A learner opened a new topic. Their first message:\n\n<learner>\n${firstMessage}\n</learner>\n\n` +
+export function intakePrompt(firstMessage: string, uploads = "") {
+  return `A learner opened a new topic. Their first message:\n\n<learner>\n${firstMessage}\n</learner>${uploads}\n\n` +
     `Start the intake as the teach skill describes.`;
 }
 
-export function intakeReply(message: string) {
-  return `<learner>\n${message}\n</learner>`;
+export function intakeReply(message: string, uploads = "") {
+  return `<learner>\n${message}\n</learner>${uploads}`;
 }
 
-export function buildPrompt(reason: string) {
+export function buildPrompt(reason: string, uploads = "") {
   return (
     `The learner is ready for the next lesson (${reason}). This is a new session: read the workspace ` +
     `first (MISSION.md, NOTES.md, learning-records/, lesson-notes/, and mcp__learn__list_lessons / ` +
-    `mcp__learn__get_responses). Grade open answers, record what the evidence shows, then build and publish ` +
-    `the next lesson and its video as the teach skill describes.`
+    `mcp__learn__get_responses, mcp__learn__list_uploads). Grade open answers, record what the evidence shows, ` +
+    `then build and publish the next lesson and its video as the teach skill describes.${uploads}`
   );
 }
 
@@ -50,6 +53,11 @@ the lessons. Your current working directory is the topic workspace, and you can 
 Before your first answer, read: MISSION.md, NOTES.md, GLOSSARY.md (if present), the lesson file, and the
 reference documents it links to. Read earlier lessons and the learner's answers
 (\`mcp__tutor__get_responses\`) when they help.
+
+The learner may have added their own course files (lecture notes, slides, textbooks). They are in
+\`uploads/\`; \`mcp__tutor__list_uploads\` lists them and says how to read each one, and Athena's map of
+each file is in \`material-notes/\`. When the learner asks about their course, answer from these files and
+name the place (for example "Lecture 4 slides, slide 12"). Use the course's own terms and notation.
 
 How to help:
 - Answer the learner's question about this lesson clearly and briefly, in the learner's own terms and the

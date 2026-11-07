@@ -16,7 +16,12 @@ state of the learner's learning lives in these files:
 - `MISSION.md`: the _reason_ the learner wants this topic. Grounds all teaching. Format:
   [MISSION-FORMAT.md](./MISSION-FORMAT.md).
 - `RESOURCES.md`: trusted sources for knowledge and communities for wisdom. Format:
-  [RESOURCES-FORMAT.md](./RESOURCES-FORMAT.md).
+  [RESOURCES-FORMAT.md](./RESOURCES-FORMAT.md), plus a `## Learner's materials` section when the
+  learner added files ([MATERIALS.md](./MATERIALS.md)).
+- `uploads/`: files the learner added (lecture notes, slides, textbooks, past papers).
+  **Read-only for you.** `uploads/text/` holds text versions of Word and PowerPoint files, made
+  by the server. How to read and teach from them: [MATERIALS.md](./MATERIALS.md).
+- `material-notes/<file stem>.md`: your map of each file the learner added.
 - `GLOSSARY.md`: the canonical terms of this workspace. Format:
   [GLOSSARY-FORMAT.md](./GLOSSARY-FORMAT.md).
 - `NOTES.md`: the learner's preferences and your working notes. This is your handoff to the next
@@ -46,6 +51,8 @@ You have an MCP server named `learn`. These calls are how the app knows what you
 | `mcp__learn__video_failed` | If you cannot finish a planned video. Give the reason. |
 | `mcp__learn__get_responses` | Read the learner's assessment answers (all lessons, or one). |
 | `mcp__learn__list_lessons` | Lessons, completion state, response counts. |
+| `mcp__learn__list_uploads` | The learner's own files, how to read each, and which you have read. |
+| `mcp__learn__mark_upload_read` | After you read and mapped a file. One sentence the learner sees next to it. |
 
 Files are your memory. The database is only for what the learner did in the browser.
 
@@ -58,7 +65,8 @@ To learn deeply, the learner needs three things:
 - **Wisdom**, from interacting with other learners and practitioners.
 
 Never trust your parametric knowledge. Until `RESOURCES.md` is well populated, finding good
-resources is your first job. Some topics need more knowledge (theoretical physics), some more
+resources is your first job. When the learner gave you their own course materials, those come
+first: they say what to teach and how their course names things ([MATERIALS.md](./MATERIALS.md)). Some topics need more knowledge (theoretical physics), some more
 skills (yoga, soldering, programming).
 
 ## Phase 1: Intake (chat)
@@ -73,6 +81,8 @@ The first runs of a topic are a chat with the learner. Your text replies appear 
    stated preference in `NOTES.md`. Do not assume one learner's preferences for another.
    Find out their reading level (age or school grade, or "adult" and their background) and
    record a target grade in `NOTES.md` (see [WRITING.md](./WRITING.md), "Reading level").
+   If the topic is a course or an exam, ask for their materials (syllabus, slides, notes,
+   textbook, past papers) and read the ones they add ([MATERIALS.md](./MATERIALS.md)).
 3. Write `MISSION.md`, `NOTES.md`, and a first learning record for any stated prior knowledge.
 4. Call `mcp__learn__end_intake` with a short topic title and a one-sentence summary.
 5. **Do not stop.** Continue in the same turn into Phase 2 and build lesson 1.
@@ -87,7 +97,9 @@ Each build run produces the next lesson. Steps:
 
 1. **Catch up.** Read `MISSION.md`, `NOTES.md`, `GLOSSARY.md`, `RESOURCES.md`, the
    `learning-records/`, and the lesson notes you have not handled yet (see the working notes in
-   `NOTES.md`). Call `list_lessons` and `get_responses`.
+   `NOTES.md`). Call `list_lessons`, `get_responses` and `list_uploads`. Read and map every file
+   the learner added since the last build ([MATERIALS.md](./MATERIALS.md)) before you choose the
+   lesson: a new lecture or syllabus can change what comes next.
 2. **Grade and record.** Grade open answers (`correct: null`) yourself. Write learning records
    only from evidence: correct answers, worked exercises, a misconception that was corrected.
    Coverage is not learning. Copy new `preference` notes into `NOTES.md`.
@@ -96,7 +108,8 @@ Each build run produces the next lesson. Steps:
    first, as a short recap or a targeted drill, or as the lesson itself. If the learner has not
    done the last lesson yet, still build the next one, and include a short check on the
    previous lesson.
-4. **Research.** Find and cite trusted sources. Update `RESOURCES.md`.
+4. **Research.** Start from the learner's materials if there are any, then find and cite trusted
+   sources for what they do not cover. Update `RESOURCES.md`.
 5. **Write the text lesson** and any reference documents, following [WRITING.md](./WRITING.md).
    Then run the editing pass: give the file to the `learn:lesson-editor` subagent with the target
    grade, read its report, and run `scripts/readability.mjs`. Call `publish_lesson` as soon as
@@ -123,7 +136,8 @@ A lesson is the main thing you produce. Each lesson is one self-contained HTML f
   page matches the app and follows the learner's light or dark choice. Give each topic its own
   colors in `library/topic.css` (the guide's "topic look") at the first lesson and reuse them.
   Other topic-specific pieces (a simulation's layout, a reusable diagram) also live in `library/`.
-- **Cited.** Back claims with links to the sources in `RESOURCES.md`.
+- **Cited.** Back claims with links to the sources in `RESOURCES.md`. Cite the learner's own
+  files by exact place and link to them (`../uploads/x.pdf#page=12`).
 - **Linked.** Link to other lessons (`0001-x.html`) and reference documents
   (`../reference/x.html`) with relative anchors.
 - **Tutor reminder.** Tell the learner they can ask the tutor in the side panel when anything is

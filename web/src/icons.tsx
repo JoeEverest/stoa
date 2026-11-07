@@ -43,3 +43,7 @@ export function Mark({ size = 20 }: { size?: number }) {
     </svg>
   );
 }
+
+export const Paperclip = (p: P) => <svg {...base(p)}><path d="M13 7.5 8.1 12.4a3 3 0 0 1-4.25-4.24l5.3-5.3a2 2 0 0 1 2.83 2.83L6.7 10.98a1 1 0 0 1-1.41-1.41L10 4.86" /></svg>;
+export const X = (p: P) => <svg {...base(p)}><path d="m4.5 4.5 7 7M11.5 4.5l-7 7" /></svg>;
+export const Settings = (p: P) => <svg {...base(p)}><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6" /><circle cx="10" cy="4.5" r="1.5" /><circle cx="6" cy="11.5" r="1.5" /></svg>;

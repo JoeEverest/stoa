@@ -4,6 +4,7 @@ interface Window {
     platform: string;
     setApiKey(key: string): Promise<{ ok: boolean; error?: string }>;
     clearApiKey(): Promise<{ ok: boolean }>;
+    apiKeyInfo(): Promise<{ set: boolean; last4: string | null }>;
     openLogs(): Promise<string>;
   };
 }

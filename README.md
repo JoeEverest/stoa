@@ -54,7 +54,9 @@ On first launch, a setup screen does two things:
 
 1. **Claude.** Stoa uses the Claude Code login on this computer if it finds one. If not, you
    paste an API key from the Claude Console; Stoa checks it with Anthropic and stores it
-   encrypted (macOS Keychain, or the Linux keyring through Electron's `safeStorage`).
+   encrypted (macOS Keychain, or the Linux keyring through Electron's `safeStorage`). Later, **Settings**
+   (the sliders button at the bottom of the sidebar) lets you replace or remove the key, or switch
+   between the key and your Claude login.
 2. **Video tools.** Stoa downloads Python with the Kokoro voice, ffmpeg, a headless Chrome and the
    whisper speech-timing model, about 1 GB, into its app-data folder. Every file is pinned to a
    version, and the ones Stoa downloads itself are checked against a SHA-256. `whisper-cli` ships
@@ -119,6 +121,9 @@ npm run dev             # open http://localhost:5173
 2. Answer Athena's questions about your goal. When Athena has enough, the chat closes and the
    first lesson is built. The reading part appears first (a few minutes); the video follows when
    it has rendered (often 10–20 minutes, depending on its length and your machine).
+   Studying for a class? Attach your lecture notes, slides, textbook or past papers (PDF, Word or
+   PowerPoint) when you start, during the chat, or later under **Your materials**. Athena reads
+   them, follows your course's order and terms, and cites the exact slide or page.
 3. Read, watch, and do the exercises. Ask the tutor on the right when something is unclear.
 4. Click **Finish lesson** at the end of a lesson, or **Next lesson** at the top, and Athena builds
    the next one from your answers and the tutor's notes.

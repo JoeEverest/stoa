@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld("stoaDesktop", {
   platform: process.platform,
   setApiKey: (key) => ipcRenderer.invoke("stoa:set-api-key", key),
   clearApiKey: () => ipcRenderer.invoke("stoa:clear-api-key"),
+  apiKeyInfo: () => ipcRenderer.invoke("stoa:api-key-info"),
   openLogs: () => ipcRenderer.invoke("stoa:open-logs"),
 });

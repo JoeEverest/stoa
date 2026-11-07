@@ -5,12 +5,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { randomBytes } from "node:crypto";
-import { Lessons, Messages, Responses, Runs, Topics } from "./db.ts";
+import { Lessons, Messages, Responses, Runs, Topics, Uploads } from "./db.ts";
 import { APP_ROOT, WEB_DIST, resolveInTopic, topicDir } from "./paths.ts";
-import { requestNextLesson, sendIntakeMessage, sendTutorMessage, stopTopicRuns, stopTopicRunsAndWait } from "./runner.ts";
+import { announceUploads, requestNextLesson, sendIntakeMessage, sendTutorMessage, stopTopicRuns, stopTopicRunsAndWait } from "./runner.ts";
 import { deleteAgentSessions, killProcessesIn, removeFolder } from "./cleanup.ts";
 import { DESKTOP, checkClaude, setApiKey, setupState, startToolInstall } from "./setup.ts";
 import { writeShims } from "./runtimes.ts";
+import { UploadError, checkName, deleteUpload, saveUpload } from "./uploads.ts";
 
 const app = new Hono();
 const port = Number(process.env.PORT ?? 3210);
@@ -35,7 +36,8 @@ const MIME: Record<string, string> = {
   ".mjs": "text/javascript; charset=utf-8", ".json": "application/json", ".svg": "image/svg+xml",
   ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webp": "image/webp",
   ".mp4": "video/mp4", ".webm": "video/webm", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".woff2": "font/woff2",
-  ".woff": "font/woff", ".ttf": "font/ttf", ".md": "text/markdown; charset=utf-8", ".txt": "text/plain; charset=utf-8",
+  ".woff": "font/woff", ".ttf": "font/ttf", ".md": "text/plain; charset=utf-8", ".txt": "text/plain; charset=utf-8",
+  ".csv": "text/plain; charset=utf-8",
   ".pdf": "application/pdf",
 };
 
@@ -132,14 +134,33 @@ api.get("/topics", (c) =>
     };
   })));
 
+/**
+ * Create a topic. With `start: false` the first message is saved but Athena does not start until
+ * POST /topics/:id/start, so files the learner attached can be uploaded first.
+ */
 api.post("/topics", async (c) => {
-  const { message } = await c.req.json<{ message: string }>();
+  const { message, start = true } = await c.req.json<{ message: string; start?: boolean }>();
   if (!message?.trim()) return c.json({ error: "Write what you want to learn." }, 400);
   const id = slug(message);
   fs.mkdirSync(topicDir(id), { recursive: true });
   Topics.create(id, workingTitle(message));
-  sendIntakeMessage(id, message.trim(), true);
+  if (start) sendIntakeMessage(id, message.trim(), true);
+  else Messages.add(id, "teacher", "user", message.trim());
   return c.json({ id });
+});
+
+/** Start the intake of a topic created with `start: false`, from the messages saved so far. */
+function startIntake(id: string) {
+  const text = Messages.list(id, "teacher").filter((m) => m.role === "user").map((m) => m.content).join("\n\n");
+  sendIntakeMessage(id, text, true, false);
+}
+
+api.post("/topics/:id/start", (c) => {
+  const id = c.req.param("id");
+  if (!Topics.get(id)) return c.notFound();
+  if (Runs.last(id, "intake")) return c.json({ started: false });
+  startIntake(id);
+  return c.json({ started: true });
 });
 
 api.get("/topics/:id", (c) => {
@@ -160,7 +181,13 @@ api.post("/topics/:id/messages", async (c) => {
   if (topic.phase !== "intake") return c.json({ error: "The intake chat is closed. Use the tutor in a lesson." }, 409);
   const { text } = await c.req.json<{ text: string }>();
   if (!text?.trim()) return c.json({ error: "Empty message" }, 400);
-  sendIntakeMessage(id, text.trim(), false);
+  if (!Runs.last(id, "intake")) {
+    // The topic was never started (the app closed while files uploaded): start with everything said.
+    Messages.add(id, "teacher", "user", text.trim());
+    startIntake(id);
+  } else {
+    sendIntakeMessage(id, text.trim(), false);
+  }
   return c.json({ ok: true });
 });
 
@@ -200,6 +227,38 @@ api.get("/topics/:id/references", (c) => {
     const title = html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() || f.replace(/\.html$/, "");
     return { file: `reference/${f}`, title };
   }));
+});
+
+// ---- The learner's own files ----
+
+api.get("/topics/:id/uploads", (c) => c.json(Uploads.list(c.req.param("id"))));
+
+/** Body: the raw file. Query: ?name=<file name>. Streams to disk, so large textbooks are fine. */
+api.put("/topics/:id/uploads", async (c) => {
+  const id = c.req.param("id");
+  if (!Topics.get(id)) return c.notFound();
+  const name = (c.req.query("name") ?? "").trim();
+  if (!name) return c.json({ error: "The file has no name." }, 400);
+  try {
+    checkName(name);
+    const declared = Number(c.req.header("content-length") ?? 0);
+    if (declared > 500 * 1024 * 1024) throw new UploadError("The file is larger than 500 MB.", 413);
+    const upload = await saveUpload(id, name, c.req.raw.body);
+    // A teacher run that is working now gets the file as a steering message.
+    return c.json({ ...upload, steered: announceUploads(id) });
+  } catch (err) {
+    if (err instanceof UploadError) return c.json({ error: err.message }, err.status);
+    console.error("[upload]", err);
+    return c.json({ error: "Stoa could not save the file." }, 500);
+  }
+});
+
+api.delete("/topics/:id/uploads/:upload", (c) => {
+  const id = c.req.param("id");
+  const u = Uploads.get(id, Number(c.req.param("upload")));
+  if (!u) return c.notFound();
+  deleteUpload(id, u);
+  return c.json({ ok: true });
 });
 
 api.get("/topics/:id/lessons/:lesson", (c) => {

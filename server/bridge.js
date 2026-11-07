@@ -67,7 +67,10 @@
         return;
       }
       var prefix = "/w/" + encodeURIComponent(topic) + "/";
-      if (url.pathname === location.pathname || url.pathname.indexOf(prefix) !== 0 || !/\.html?$/.test(url.pathname)) return;
+      if (url.pathname === location.pathname || url.pathname.indexOf(prefix) !== 0) return;
+      // Other pages, and the learner's own files (a citation such as uploads/notes.pdf#page=12).
+      var isUpload = url.pathname.indexOf(prefix + "uploads/") === 0;
+      if (!isUpload && !/\.html?$/.test(url.pathname)) return;
       e.preventDefault();
       notifyParent("navigate", { path: decodeURIComponent(url.pathname.slice(prefix.length)), hash: url.hash });
     });

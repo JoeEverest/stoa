@@ -2,8 +2,9 @@ import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import fs from "node:fs";
 import path from "node:path";
-import { Lessons, Responses, Topics } from "./db.ts";
+import { Lessons, Responses, Topics, Uploads } from "./db.ts";
 import { lessonIdFromFile, resolveInTopic } from "./paths.ts";
+import { uploadInfo } from "./uploads.ts";
 
 const ok = (data: unknown) => ({
   content: [{ type: "text" as const, text: typeof data === "string" ? data : JSON.stringify(data, null, 2) }],
@@ -26,6 +27,16 @@ const getResponses = (topicId: string) =>
       "Records with correct = null still need grading by the teacher.",
     { lesson: z.string().optional().describe("Lesson ID such as 0002-split-the-velocity. Omit for all lessons.") },
     async ({ lesson }) => ok(Responses.list(topicId, lesson)),
+    { annotations: { readOnlyHint: true } },
+  );
+
+const listUploads = (topicId: string) =>
+  tool(
+    "list_uploads",
+    "List the files the learner added to this topic (lecture notes, slides, textbooks, past papers), with how " +
+      "to read each one and whether the teacher has read it. The files are in uploads/ and are read-only.",
+    {},
+    async () => ok(Uploads.list(topicId).map(uploadInfo)),
     { annotations: { readOnlyHint: true } },
   );
 
@@ -102,6 +113,21 @@ export function teacherMcp(topicId: string) {
         },
       ),
       getResponses(topicId),
+      listUploads(topicId),
+      tool(
+        "mark_upload_read",
+        "Call after you read a file the learner added and wrote its map (MATERIALS.md in the teach skill). " +
+          "The learner sees the summary next to the file.",
+        {
+          id: z.number().int().describe("Upload ID from list_uploads"),
+          summary: z.string().describe("One plain sentence for the learner: what the file is and how you use it"),
+        },
+        async ({ id, summary }) => {
+          if (!Uploads.get(topicId, id)) return fail(`Unknown upload ${id}. Call list_uploads.`);
+          Uploads.markRead(topicId, id, summary.trim());
+          return ok("Marked as read.");
+        },
+      ),
       tool(
         "list_lessons",
         "List published lessons with video state, completion state and response counts.",
@@ -140,6 +166,7 @@ export function tutorMcp(topicId: string, lessonId: string) {
         },
       ),
       getResponses(topicId),
+      listUploads(topicId),
     ],
   });
 }

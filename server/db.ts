@@ -70,6 +70,20 @@ CREATE TABLE IF NOT EXISTS runs (
   started_at TEXT,
   ended_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS uploads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  topic_id TEXT NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
+  file TEXT NOT NULL,                        -- uploads/<name>, relative to the topic folder
+  name TEXT NOT NULL,                        -- the learner's file name
+  size INTEGER NOT NULL,
+  text_file TEXT,                            -- uploads/text/<name>.md, for formats the agent can not read
+  problem TEXT,                              -- why no text could be made, if so
+  summary TEXT,                              -- Athena's one-line summary, after she read it
+  read_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS uploads_topic ON uploads(topic_id, id);
 `);
 
 // Runs that were active when the server stopped can not continue.
@@ -174,6 +188,23 @@ export const Responses = {
     q<{ lesson_id: string; n: number; right: number; graded: number }>(
       `SELECT lesson_id, COUNT(*) n, SUM(correct = 1) AS "right", SUM(correct IS NOT NULL) AS graded
        FROM responses WHERE topic_id = ? GROUP BY lesson_id`).all(topicId),
+};
+
+export type Upload = {
+  id: number; topic_id: string; file: string; name: string; size: number; text_file: string | null;
+  problem: string | null; summary: string | null; read_at: string | null; created_at: string;
+};
+
+export const Uploads = {
+  list: (topicId: string) => q<Upload>(`SELECT * FROM uploads WHERE topic_id = ? ORDER BY id`).all(topicId),
+  get: (topicId: string, id: number) => q<Upload>(`SELECT * FROM uploads WHERE topic_id = ? AND id = ?`).get(topicId, id),
+  unread: (topicId: string) => q<Upload>(`SELECT * FROM uploads WHERE topic_id = ? AND read_at IS NULL ORDER BY id`).all(topicId),
+  add: (topicId: string, u: { file: string; name: string; size: number; textFile: string | null; problem: string | null }) =>
+    Number(q(`INSERT INTO uploads (topic_id, file, name, size, text_file, problem) VALUES (?, ?, ?, ?, ?, ?)`)
+      .run(topicId, u.file, u.name, u.size, u.textFile, u.problem).lastInsertRowid),
+  markRead: (topicId: string, id: number, summary: string) =>
+    q(`UPDATE uploads SET read_at = datetime('now'), summary = ? WHERE topic_id = ? AND id = ?`).run(summary, topicId, id),
+  remove: (topicId: string, id: number) => q(`DELETE FROM uploads WHERE topic_id = ? AND id = ?`).run(topicId, id),
 };
 
 export const Runs = {

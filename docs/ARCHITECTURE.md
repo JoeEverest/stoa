@@ -16,7 +16,7 @@ Claude Agent SDK, keeps app state in SQLite, and serves a React app.
 
 ```
 $DATA_DIR/
-  app.db                     SQLite: topics, lessons, messages, responses, runs
+  app.db                     SQLite: topics, lessons, messages, responses, runs, uploads
   topics/<topic-id>/         one teach workspace (one mission)
     MISSION.md  RESOURCES.md  GLOSSARY.md  NOTES.md
     learning-records/0001-*.md
@@ -26,6 +26,9 @@ $DATA_DIR/
     reference/*.html          reference documents
     library/                  topic asset library (fonts, sfx, scene parts, video starter)
     videos/0001-<slug>/       HyperFrames source projects
+    uploads/                  the learner's own files (read-only for the agents)
+    uploads/text/<name>.md    text and images taken from .docx/.pptx uploads by the server
+    material-notes/<name>.md  Athena's map of each uploaded file
 ```
 
 A lesson ID is the file name of the lesson without `.html`, for example `0001-two-motions`.
@@ -82,6 +85,8 @@ until the teacher publishes the video, then puts a `<video>` player there.
 | `video_failed` | `lesson`, `reason` | Marks the video as failed |
 | `get_responses` | `lesson?` | Returns assessment records |
 | `list_lessons` | — | Lessons with completion state and response counts |
+| `list_uploads` | — | The learner's files, how to read each, and which are read |
+| `mark_upload_read` | `id`, `summary` | Marks a file as read; the learner sees the summary |
 
 ## Tutor MCP tools (`mcp__tutor__*`)
 
@@ -89,6 +94,33 @@ until the teacher publishes the video, then puts a `<video>` player there.
 |---|---|---|
 | `add_lesson_note` | `kind`, `note` | Appends to `lesson-notes/<lesson>.md` |
 | `get_responses` | `lesson?` | Returns assessment records |
+| `list_uploads` | — | The learner's files |
+
+## The learner's files (`server/uploads.ts`)
+
+The learner can add files when they create a topic, in the intake chat, or in the classroom's
+"Your materials" list: PDF, Word (.docx), PowerPoint (.pptx), text, Markdown, CSV and images, up
+to 500 MB each. `PUT /api/topics/:id/uploads?name=<file name>` streams the raw body to
+`uploads/`. The agents read PDFs and images directly. For .docx and .pptx the server writes
+`uploads/text/<name>.md` (headings, bullets, one section per slide, speaker notes) and copies the
+images to `uploads/text/<name>-media/`, with a small zip reader and no extra dependencies.
+
+Every teacher prompt (intake turns and builds) ends with an `<uploads>` block while there are
+files Athena has not marked as read. How she reads, maps and teaches from them:
+`agent/plugin/skills/teach/MATERIALS.md`. To upload files before the first intake turn, the app
+creates the topic with `start: false`, uploads, then calls `POST /api/topics/:id/start`.
+
+**Steering.** Teacher runs use the SDK's streaming input: the prompt is the first message of an
+input stream that stays open while the run works. When the learner adds a file during a teacher
+run, `announceUploads()` (after 1.5 s, so files added together go in one message) pushes an
+`<uploads>` message with `priority: "next"`, which the CLI folds into the running turn at the next
+tool call. A message that arrives after the turn's last tool call starts one more turn instead, so
+the runner closes the input only when every steering message has reached `command_lifecycle` state
+`started` (20 s fallback). The learner sees an activity line in the chat, and the upload response
+has `steered: true`. With no teacher run working, the next run's prompt lists the unread files.
+
+Lessons cite files as `../uploads/x.pdf#page=12`; the bridge opens such links in the app's frame,
+so the lesson stays loaded.
 
 ## Skills
 

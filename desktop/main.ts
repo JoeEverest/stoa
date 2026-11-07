@@ -211,6 +211,7 @@ async function createWindow() {
     webPreferences: {
       preload: path.join(APP_ROOT, "desktop", "preload.cjs"),
       contextIsolation: true, sandbox: true, nodeIntegration: false,
+      plugins: true, // Chromium's PDF viewer, for the learner's own PDFs in the lesson frame
     },
   });
   const origin = new URL(url).origin;
@@ -245,6 +246,12 @@ ipcMain.handle("stoa:clear-api-key", async () => {
   writeApiKey(null);
   await sendToServer({ type: "api-key", key: null }, "api-key-applied");
   return { ok: true };
+});
+
+/** Whether a key is stored, and its last four characters so Settings can show which one. Never the key. */
+ipcMain.handle("stoa:api-key-info", () => {
+  const key = readApiKey();
+  return { set: !!key, last4: key ? key.slice(-4) : null };
 });
 
 ipcMain.handle("stoa:open-logs", () => shell.openPath(LOG_DIR));

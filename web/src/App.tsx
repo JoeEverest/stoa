@@ -3,6 +3,8 @@ import { marked } from "marked";
 import { api, useArrivals, usePoll, useThread, type Lesson, type Message, type Topic, type TopicState } from "./api";
 import * as I from "./icons";
 import { Setup } from "./Setup";
+import { SettingsButton } from "./Settings";
+import { AttachButton, FileChips, MaterialsList, fileProblem, sizeLabel, uploadChips, useDropFiles, useUploads } from "./Materials";
 
 // ---- Routing: #/ (new topic), #/t/<topic>, #/t/<topic>/<lesson-id | ref:reference/x.html> ----
 
@@ -79,7 +81,10 @@ function Main() {
           {topics.data?.length === 0 && <p className="rail-empty">Your topics appear here.</p>}
           {topics.data?.map((t) => <TopicLink key={t.id} topic={t} active={t.id === topicId} />)}
         </nav>
-        <ThemeSwitch value={theme} onChange={setTheme} />
+        <div className="rail-foot">
+          <ThemeSwitch value={theme} onChange={setTheme} />
+          <SettingsButton />
+        </div>
       </aside>
       <main className="main">
         {topicId
@@ -128,32 +133,78 @@ const EXAMPLES = [
 
 function NewTopic({ onCreated }: { onCreated: () => void }) {
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // A topic whose files did not all upload: the learner can retry or continue without them.
+  const [pending, setPending] = useState<{ id: string; failed: File[] } | null>(null);
+
+  const attach = (picked: File[]) => {
+    const problems = picked.map(fileProblem).filter(Boolean);
+    setError(problems.length ? problems.join(" ") : null);
+    setFiles((f) => [...f, ...picked.filter((p) => !fileProblem(p) && !f.some((x) => x.name === p.name && x.size === p.size))]);
+  };
+  const drop = useDropFiles(attach);
+
+  const begin = async (id: string) => {
+    await api.startTopic(id);
+    onCreated();
+    go(id);
+  };
+  const uploadAll = async (id: string, list: File[]) => {
+    const failed: File[] = [];
+    const reasons: string[] = [];
+    for (const [i, f] of list.entries()) {
+      setBusy(`Adding ${f.name}${list.length > 1 ? ` (${i + 1} of ${list.length})` : ""}`);
+      try { await api.upload(id, f); } catch (e) { failed.push(f); reasons.push(`${f.name}: ${e instanceof Error ? e.message : e}`); }
+    }
+    if (!failed.length) return begin(id);
+    setPending({ id, failed });
+    setFiles(failed);
+    setError(reasons.join(" "));
+    setBusy(null);
+  };
   const start = async () => {
-    if (!text.trim() || busy) return;
-    setBusy(true);
+    if (busy) return;
     setError(null);
     try {
-      const { id } = await api.createTopic(text);
-      onCreated();
-      go(id);
+      if (pending) { setBusy("Adding files"); return await uploadAll(pending.id, files); }
+      if (!text.trim()) return;
+      setBusy("Starting");
+      const { id } = await api.createTopic(text, files.length === 0);
+      if (!files.length) { onCreated(); return go(id); }
+      await uploadAll(id, files);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
-      setBusy(false);
+      setBusy(null);
     }
   };
   return (
-    <div className="new-topic-page">
+    <div className={`new-topic-page ${drop.over ? "drop-over" : ""}`} {...drop.props}>
       <div className="new-topic-inner">
         <h1>What do you want to learn?</h1>
         <p className="lead">
           Say what you want to be able to do. Athena asks a few questions about your goal, then builds
           your first lesson: reading, a narrated video and exercises.
         </p>
-        <Composer value={text} onChange={setText} onSend={start} disabled={busy} rows={3} autoFocus
-          placeholder="I want to learn…" sendLabel={busy ? "Starting" : "Start"} big />
+        <Composer value={text} onChange={setText} onSend={start} disabled={!!busy || !!pending} rows={3} autoFocus
+          placeholder="I want to learn…" sendLabel={busy ?? "Start"} big
+          extra={<AttachButton onFiles={attach} disabled={!!busy} className="attach-btn" label="Attach course files" />}
+          top={<FileChips items={files.map((f, i) => ({
+            key: `${i}-${f.name}`, name: f.name, meta: sizeLabel(f.size),
+            onRemove: busy ? undefined : () => setFiles((all) => all.filter((x) => x !== f)),
+          }))} />} />
+        <p className="attach-hint">
+          Studying for a class? Attach your lecture notes, slides, textbook or past papers (PDF, Word, PowerPoint).
+          Athena teaches from them and follows your course.
+        </p>
         {error && <p className="error" role="alert">{error}</p>}
+        {pending && !busy && (
+          <div className="pending-actions">
+            <button className="btn btn-primary" onClick={start} disabled={!files.length}>Try again<I.ArrowRight /></button>
+            <button className="btn btn-secondary" onClick={() => begin(pending.id).catch((e) => setError(e instanceof Error ? e.message : String(e)))}>Continue without them</button>
+          </div>
+        )}
         <div className="examples">
           <span className="examples-label">Or start from an example</span>
           {EXAMPLES.map((e) => (
@@ -186,6 +237,8 @@ function TopicView({ topicId, view, onChange }: { topicId: string; view: string 
 function IntakeChat({ state, onSent, menu }: { state: TopicState; onSent: () => void; menu: React.ReactNode }) {
   const { topic, busy, lastError } = state;
   const thread = useThread((after) => api.messages(topic.id, after), 1500, topic.id);
+  const files = useUploads(topic.id);
+  const drop = useDropFiles(files.add);
   const [text, setText] = useState("");
   const send = async () => {
     if (!text.trim() || busy) return;
@@ -196,7 +249,7 @@ function IntakeChat({ state, onSent, menu }: { state: TopicState; onSent: () => 
     onSent();
   };
   return (
-    <div className="intake">
+    <div className={`intake ${drop.over ? "drop-over" : ""}`} {...drop.props}>
       <header className="topbar">
         <div className="topbar-title">
           <h1>{topic.title}</h1>
@@ -207,8 +260,11 @@ function IntakeChat({ state, onSent, menu }: { state: TopicState; onSent: () => 
       <ChatLog messages={thread.messages} baseline={thread.baseline} typing={busy} who="Athena" />
       <div className="chat-dock">
         {lastError && !busy && <p className="error" role="alert">Athena stopped: {lastError}. Send a message to try again.</p>}
+        {files.errors.map((e) => <p key={e} className="error" role="alert">{e}</p>)}
         <Composer value={text} onChange={setText} onSend={send} disabled={busy} autoFocus
-          placeholder={busy ? "Athena is writing…" : "Reply to Athena"} sendLabel="Send" />
+          placeholder={busy ? "Athena is writing…" : "Reply to Athena"} sendLabel="Send"
+          top={<FileChips items={uploadChips(files)} />}
+          extra={<AttachButton onFiles={files.add} className="attach-btn" label="Attach course files" />} />
       </div>
     </div>
   );
@@ -219,6 +275,7 @@ function Classroom({ state, view, refresh, menu }: {
 }) {
   const { topic, lessons, building, lastError } = state;
   const refs = usePoll(() => api.references(topic.id), 8000, [topic.id]);
+  const materials = useUploads(topic.id);
   const [tutorOpen, setTutorOpen] = useState(true);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -227,6 +284,8 @@ function Classroom({ state, view, refresh, menu }: {
   const current = view ?? (lessons.find((l) => !l.completed_at) ?? lessons.at(-1))?.id ?? null;
   const lesson = lessons.find((l) => l.id === current) ?? null;
   const refFile = current?.startsWith("ref:") ? current.slice(4) : null;
+  const refPath = refFile?.split("#")[0] ?? null; // a link to a file may carry #page=12
+  const refTitle = refs.data?.find((r) => r.file === refPath)?.title ?? materials.uploads.find((u) => u.file === refPath)?.name;
   const src = lesson ? `/w/${topic.id}/${lesson.file}` : refFile ? `/w/${topic.id}/${refFile}` : null;
 
   // Keep the pages the learner visited loaded in hidden frames, so switching to a reference and
@@ -256,7 +315,7 @@ function Classroom({ state, view, refresh, menu }: {
       if (e.data.type === "navigate" && typeof e.data.data?.path === "string") {
         const path: string = e.data.data.path;
         const lessonMatch = path.match(/^lessons\/([^/]+)\.html?$/);
-        go(topic.id, lessonMatch ? lessonMatch[1] : `ref:${path}`);
+        go(topic.id, lessonMatch ? lessonMatch[1] : `ref:${path}${e.data.data.hash ?? ""}`);
       }
     };
     addEventListener("message", on);
@@ -306,8 +365,8 @@ function Classroom({ state, view, refresh, menu }: {
         <nav className={`outline ${outlineOpen ? "open" : ""}`} aria-label="Lessons and references">
           <button className="outline-toggle" aria-expanded={outlineOpen} onClick={() => setOutlineOpen((o) => !o)}>
             <span className="outline-toggle-text">
-              <span className="muted">{lesson ? `Lesson ${lessons.indexOf(lesson) + 1} of ${total}` : refFile ? "Reference" : "Lessons"}</span>
-              <span className="outline-toggle-title">{lesson?.title ?? refs.data?.find((r) => r.file === refFile)?.title ?? "Your first lesson"}</span>
+              <span className="muted">{lesson ? `Lesson ${lessons.indexOf(lesson) + 1} of ${total}` : refPath?.startsWith("uploads/") ? "Your materials" : refFile ? "Reference" : "Lessons"}</span>
+              <span className="outline-toggle-title">{lesson?.title ?? refTitle ?? "Your first lesson"}</span>
             </span>
             <I.Chevron className="outline-chevron" />
           </button>
@@ -329,15 +388,23 @@ function Classroom({ state, view, refresh, menu }: {
             <div className="refs">
               <div className="col-head"><span>Reference</span></div>
               {refs.data.map((r) => (
-                <a key={r.file} className="ref" aria-current={refFile === r.file ? "page" : undefined}
+                <a key={r.file} className="ref" aria-current={refPath === r.file ? "page" : undefined}
                   href={topicHref(topic.id, `ref:${r.file}`)} onClick={() => setOutlineOpen(false)}><I.Doc />{r.title}</a>
               ))}
             </div>
           )}
+          <MaterialsList u={materials} current={refPath} working={building} onPick={() => setOutlineOpen(false)}
+            hrefFor={(file) => topicHref(topic.id, `ref:${file}`)}
+            onAdded={(n, steered) => {
+              const what = n === 1 ? "File" : `${n} files`, it = n === 1 ? "it" : "them";
+              flash(steered
+                ? `${what} added. Athena got ${it} and uses ${it} in the work she is doing now.`
+                : `${what} added. Athena reads ${it} when she builds the next lesson.`);
+            }} />
         </nav>
         <section className="stage" aria-label={lesson?.title ?? "Lesson"}>
           {src ? shownPages.map((p) => (
-            <iframe key={p} src={p} hidden={p !== src} title={p === src ? lesson?.title ?? "Reference" : "Hidden page"} />
+            <iframe key={p} src={p} hidden={p !== src} title={p === src ? lesson?.title ?? refTitle ?? "Reference" : "Hidden page"} />
           ))
             : <BuildingPlaceholder topicId={topic.id} message={topic.status_message} />}
         </section>
@@ -491,7 +558,7 @@ function TopicMenu({ topic, onDeleted }: { topic: Topic; onDeleted: () => void }
         <h2 id="del-title">Delete “{topic.title}”?</h2>
         <p>
           This removes the topic and everything Athena made for it from this computer: lessons, videos,
-          reference sheets, your answers, and the chats with Athena and the tutor. If Athena is working on
+          reference sheets, the files you added, your answers, and the chats with Athena and the tutor. If Athena is working on
           it, that work stops first. This can't be undone.
         </p>
         {error && <p className="error" role="alert">{error}</p>}
@@ -549,12 +616,15 @@ function ChatLog({ messages, baseline, typing, who, compact, empty }: {
   );
 }
 
-function Composer({ value, onChange, onSend, disabled, placeholder, rows = 2, sendLabel, iconOnly, big, autoFocus }: {
+function Composer({ value, onChange, onSend, disabled, placeholder, rows = 2, sendLabel, iconOnly, big, autoFocus, extra, top }: {
   value: string; onChange: (v: string) => void; onSend: () => void; disabled?: boolean; placeholder?: string;
   rows?: number; sendLabel: string; iconOnly?: boolean; big?: boolean; autoFocus?: boolean;
+  /** Shown at the left of the bottom row (an attach button). */ extra?: React.ReactNode;
+  /** Shown above the text (attached files). */ top?: React.ReactNode;
 }) {
   return (
     <form className={`composer ${big ? "big" : ""}`} onSubmit={(e) => { e.preventDefault(); onSend(); }}>
+      {top}
       <textarea
         value={value} rows={rows} placeholder={placeholder} disabled={disabled} autoFocus={autoFocus}
         aria-label={placeholder}
@@ -562,6 +632,7 @@ function Composer({ value, onChange, onSend, disabled, placeholder, rows = 2, se
         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSend(); } }}
       />
       <div className="composer-row">
+        {extra}
         <span className="composer-hint">Enter to send · Shift+Enter for a new line</span>
         {iconOnly
           ? <button className="send" type="submit" disabled={disabled || !value.trim()} aria-label={sendLabel}><I.ArrowUp /></button>

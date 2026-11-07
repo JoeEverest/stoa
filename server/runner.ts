@@ -1,11 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
-import { query, type Options, type SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { Lessons, Messages, Runs, Topics, type Run } from "./db.ts";
+import { randomUUID } from "node:crypto";
+import { query, type Options, type SDKMessage, type SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
+import { Lessons, Messages, Runs, Topics, Uploads, type Run } from "./db.ts";
 import { PLUGIN_DIR, topicDir } from "./paths.ts";
 import { teacherMcp, tutorMcp } from "./mcp.ts";
 import { runtimeEnv } from "./runtimes.ts";
 import { TEACHER_SYSTEM, buildPrompt, intakePrompt, intakeReply, tutorSystem } from "./prompts.ts";
+import { uploadsNotice, uploadsSteer } from "./uploads.ts";
 
 const MODEL = process.env.LEARN_MODEL ?? "claude-opus-5-5";
 const TUTOR_MODEL = process.env.TUTOR_MODEL ?? MODEL;
@@ -39,19 +41,82 @@ type RunSpec = {
   prompt: string;
   options: Options;
   onSession?: (sessionId: string) => void;
+  /** Teacher runs: the learner can steer the running agent (for now: files they add). */
+  steerable?: boolean;
 };
 
-async function execute({ run, topicId, thread, prompt, options, onSession }: RunSpec) {
+/** The running teacher run of each topic, which accepts steering messages. */
+type Live = { run: number; steer: (text: string) => boolean; accepting: () => boolean; announced: Set<number> };
+const live = new Map<string, Live>();
+
+/**
+ * The agent's input in streaming mode: the first prompt, then any steering messages. It stays open
+ * until the run is over, so messages can reach the agent while it works.
+ */
+function inputChannel() {
+  const queue: SDKUserMessage[] = [];
+  let wake: (() => void) | null = null;
+  let closed = false;
+  return {
+    iterable: {
+      async *[Symbol.asyncIterator]() {
+        for (;;) {
+          while (queue.length) yield queue.shift()!;
+          if (closed) return;
+          await new Promise<void>((r) => { wake = r; });
+          wake = null;
+        }
+      },
+    } as AsyncIterable<SDKUserMessage>,
+    get closed() { return closed; },
+    push(text: string, priority?: SDKUserMessage["priority"]) {
+      if (closed) return null;
+      const uuid = randomUUID();
+      queue.push({ type: "user", message: { role: "user", content: text }, parent_tool_use_id: null, uuid, ...(priority && { priority }) });
+      wake?.();
+      return uuid;
+    },
+    close() { closed = true; wake?.(); },
+  };
+}
+
+/** How long to wait, after a turn ends with a steering message not taken in, for the turn that answers it. */
+const STEER_GRACE_MS = 20_000;
+
+async function execute({ run, topicId, thread, prompt, options, onSession, steerable }: RunSpec) {
   if (Runs.get(run)?.status !== "queued") return; // stopped while it waited
   const abortController = new AbortController();
   aborts.set(run, abortController);
   Runs.start(run);
   let cost: number | null = null;
   let pending: string | null = null;
+  const input = inputChannel();
+  input.push(prompt);
+  // Steering messages the agent has not taken in yet. "next" folds a message into the running turn
+  // between tool calls; one sent after the turn's last tool call starts a new turn instead. The CLI
+  // reports each message's state (queued, started, completed) as a command_lifecycle message.
+  const unconsumed = new Set<string>();
+  let grace: ReturnType<typeof setTimeout> | null = null;
+  const stopGrace = () => { if (grace) clearTimeout(grace); grace = null; };
+  if (steerable) {
+    live.set(topicId, {
+      run,
+      announced: new Set(Uploads.unread(topicId).map((u) => u.id)), // already in the prompt
+      accepting: () => !input.closed,
+      steer: (text) => {
+        const uuid = input.push(text, "next");
+        if (uuid) unconsumed.add(uuid);
+        return !!uuid;
+      },
+    });
+  }
   try {
-    const stream = query({ prompt, options: { ...options, abortController } });
+    const stream = query({ prompt: input.iterable, options: { ...options, abortController } });
     for await (const msg of stream as AsyncIterable<SDKMessage>) {
-      if (msg.type === "system" && msg.subtype === "init") {
+      const m = msg as any;
+      if (m.type === "command_lifecycle" && m.state === "started" && unconsumed.delete(m.command_uuid)) {
+        stopGrace(); // after a result: the agent took it up in a new turn
+      } else if (msg.type === "system" && msg.subtype === "init") {
         Runs.setSession(run, msg.session_id);
         onSession?.(msg.session_id);
       } else if (msg.type === "assistant" && msg.parent_tool_use_id === null) {
@@ -68,8 +133,12 @@ async function execute({ run, topicId, thread, prompt, options, onSession }: Run
       } else if (msg.type === "result") {
         if (pending) Messages.add(topicId, thread, "assistant", pending);
         pending = null;
-        cost = (msg as any).total_cost_usd ?? null;
+        cost = (msg as any).total_cost_usd ?? null; // cumulative across turns
         if (msg.subtype !== "success") throw new Error(`Agent stopped: ${msg.subtype}`);
+        if (!unconsumed.size) input.close(); // done: the stream ends
+        // A steering message is still waiting: the agent answers it in one more turn. If that turn does
+        // not start (a CLI that does not report command_lifecycle), end the run after a short wait.
+        else grace = setTimeout(() => input.close(), STEER_GRACE_MS);
       }
     }
     Runs.finish(run, "done", null, cost);
@@ -86,8 +155,33 @@ async function execute({ run, topicId, thread, prompt, options, onSession }: Run
       } catch { /* topic removed mid-write */ }
     }
   } finally {
+    stopGrace();
+    input.close();
+    if (live.get(topicId)?.run === run) live.delete(topicId);
     aborts.delete(run);
   }
+}
+
+const steerTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/**
+ * Tell the running teacher run about files the learner just added. Files added close together go
+ * in one message. Returns false when no teacher run is working; the next run's prompt lists them.
+ */
+export function announceUploads(topicId: string) {
+  if (!live.get(topicId)?.accepting()) return false;
+  clearTimeout(steerTimers.get(topicId));
+  steerTimers.set(topicId, setTimeout(() => {
+    steerTimers.delete(topicId);
+    const l = live.get(topicId);
+    if (!l) return;
+    const fresh = Uploads.unread(topicId).filter((u) => !l.announced.has(u.id));
+    if (!fresh.length || !l.steer(uploadsSteer(fresh))) return;
+    for (const u of fresh) l.announced.add(u.id);
+    const names = fresh.map((u) => u.name).join(", ");
+    Messages.add(topicId, "teacher", "activity", `You added ${names}. Athena got ${fresh.length === 1 ? "it" : "them"} while she works.`);
+  }, 1500));
+  return true;
 }
 
 function teacherOptions(topicId: string, resume?: string): Options {
@@ -109,17 +203,21 @@ function teacherOptions(topicId: string, resume?: string): Options {
   };
 }
 
-/** Intake: each learner message is one run that resumes the intake session. */
-export function sendIntakeMessage(topicId: string, text: string, first: boolean) {
-  Messages.add(topicId, "teacher", "user", text);
+/**
+ * Intake: each learner message is one run that resumes the intake session. `record: false` runs a
+ * message that is already in the chat (a topic created first, then started after its uploads).
+ */
+export function sendIntakeMessage(topicId: string, text: string, first: boolean, record = true) {
+  if (record) Messages.add(topicId, "teacher", "user", text);
   const run = Runs.create(topicId, "intake");
   return enqueue(topicId, () => {
     const topic = Topics.get(topicId);
     if (!topic) return Promise.resolve();
     return execute({
       run, topicId, thread: "teacher",
-      prompt: first ? intakePrompt(text) : intakeReply(text),
+      prompt: first ? intakePrompt(text, uploadsNotice(topicId)) : intakeReply(text, uploadsNotice(topicId)),
       options: teacherOptions(topicId, topic.intake_session_id ?? undefined),
+      steerable: true,
       onSession: (id) => Topics.update(topicId, { intake_session_id: id }),
     });
   });
@@ -134,7 +232,7 @@ export function requestNextLesson(topicId: string, reason: string) {
   const run = Runs.create(topicId, "build");
   Topics.update(topicId, { status_message: "Next lesson queued" });
   enqueue(topicId, () =>
-    execute({ run, topicId, thread: "teacher", prompt: buildPrompt(reason), options: teacherOptions(topicId) }),
+    execute({ run, topicId, thread: "teacher", prompt: buildPrompt(reason, uploadsNotice(topicId)), options: teacherOptions(topicId), steerable: true }),
   );
   return true;
 }
@@ -155,7 +253,7 @@ export function sendTutorMessage(topicId: string, lessonId: string, text: string
         resume: lesson.tutor_session_id ?? undefined,
         systemPrompt: tutorSystem(lesson),
         tools: ["Read", "Glob", "Grep", "WebSearch", "WebFetch"],
-        allowedTools: ["Read", "Glob", "Grep", "WebSearch", "WebFetch", "mcp__tutor__add_lesson_note", "mcp__tutor__get_responses"],
+        allowedTools: ["Read", "Glob", "Grep", "WebSearch", "WebFetch", "mcp__tutor__add_lesson_note", "mcp__tutor__get_responses", "mcp__tutor__list_uploads"],
         // Anything not listed above is denied without a prompt.
         permissionMode: "dontAsk",
         settingSources: [],
