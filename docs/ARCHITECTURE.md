@@ -98,3 +98,33 @@ the user's own Claude settings do not change the teacher.
 - `teach` — the app version of the teach skill.
 - `lesson-video` — the app version of reel-motion-graphics for long narrated lesson videos.
 - `hyperframes-*` — HyperFrames reference skills, copied by `scripts/sync-skills.sh`.
+
+## Desktop app (`desktop/`)
+
+The Electron main process starts `server/index.ts` in a `utilityProcess` (Electron's Node 24 runs
+the TypeScript directly) on a free `127.0.0.1` port, then loads that URL in the window. The app,
+the lesson frames and the bridge keep one origin, as in the browser version.
+
+- **Access control.** The server gets `STOA_TOKEN`; the window gets it as an HTTP-only cookie.
+  Requests without the cookie or with another `Host` header get 403, so other local programs and
+  web pages cannot use the server.
+- **Folders.** `DATA_DIR` = `<userData>/data`, `STOA_RUNTIMES_DIR` = `<userData>/runtimes`.
+  The app ships without asar, because the agents read the plugin and run binaries from disk.
+- **PATH.** Read from a login shell at start, because apps started from the Dock or a menu do not
+  get it.
+- **Claude access** (`server/setup.ts`). A Claude Code login is found by starting Claude Code
+  without a prompt and reading `accountInfo()` (no cost). Without a login, the learner gives an
+  API key in setup; the shell checks it, stores it with `safeStorage` and sends it to the server
+  over the utilityProcess port. The server puts it in `ANTHROPIC_API_KEY` for the agents only in
+  that case.
+- **Video tools** (`server/runtimes.ts`). Setup installs Python (python-build-standalone) with
+  `kokoro-onnx` and `soundfile`, and static ffmpeg, from pinned files with SHA-256 checks. Then it
+  runs HyperFrames itself to fetch Chrome, the Kokoro model and the whisper model into
+  `HYPERFRAMES_CACHE_DIR`, which also proves each tool works. `whisper-cli` is built in CI
+  (`scripts/build-whisper.sh`) and ships in the app's resources. `runtimeEnv()` points the
+  teacher's runs at all of it (`HYPERFRAMES_*_PATH`, `HYPERFRAMES_PYTHON`, `PATH`).
+- **Shims.** `<runtimes>/bin` holds `node`, `npm`, `npx` and `hyperframes` launchers, first on the
+  agent's PATH. `node` is Electron in Node mode, and `npx hyperframes` runs the bundled
+  HyperFrames. They are rewritten at every start, because the app's path can change.
+- **Shutdown.** On quit the shell asks the server to stop every run and the tools they started,
+  then ends it. On macOS, closing the window keeps Stoa running, so a lesson build can finish.

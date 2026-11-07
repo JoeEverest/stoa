@@ -16,3 +16,7 @@ bun.lock
 # Third-party HyperFrames skills, copied in by `npm run sync-skills`
 agent/plugin/skills/hyperframes*
 agent/plugin/skills/anatomy
+
+# Desktop builds
+release
+vendor

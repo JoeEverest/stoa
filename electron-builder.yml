@@ -1,0 +1,45 @@
+# Desktop packages for macOS and Linux. Build on each target OS (CI does this): the Agent SDK's
+# Claude Code binary and whisper-cli are native and only the host platform's copy is installed.
+appId: dev.stoa.app
+productName: Stoa
+copyright: Copyright © 2026 Joe Everest
+directories:
+  output: release
+  buildResources: build
+
+# No asar archive: the agents (separate processes) read the plugin skills from disk, and the
+# server, Claude Code and HyperFrames spawn binaries from node_modules.
+asar: false
+
+files:
+  - package.json
+  - dist/web/**
+  - dist/desktop/**
+  - desktop/preload.cjs
+  - server/**
+  - "!server/**/*.d.ts"
+  - shared/**
+  - agent/plugin/**
+  - LICENSE
+
+extraResources:
+  - from: vendor/whisper/${platform}-${arch}
+    to: whisper
+    filter: ["**/*"]
+
+mac:
+  category: public.app-category.education
+  target:
+    - target: dmg
+    - target: zip
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # Signing and notarization use the standard CSC_LINK / APPLE_ID environment variables when set.
+
+linux:
+  category: Education
+  target: [AppImage, deb]
+  # .deb packages require a maintainer address; GitHub's no-reply address keeps a real one out.
+  maintainer: Joe Everest <42711226+JoeEverest@users.noreply.github.com>
+  synopsis: An AI teacher that builds lessons, videos and exercises for you.

@@ -45,7 +45,41 @@ Stoa web app ◀────── server (Hono + SQLite) ◀── answers, tut
 
 More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Design system: [DESIGN.md](DESIGN.md).
 
-## Setup
+## Desktop app (macOS and Linux)
+
+Stoa also runs as a desktop app. It contains the server, the agents and HyperFrames, so you do
+not install Node or any video tools yourself.
+
+On first launch, a setup screen does two things:
+
+1. **Claude.** Stoa uses the Claude Code login on this computer if it finds one. If not, you
+   paste an API key from the Claude Console; Stoa checks it with Anthropic and stores it
+   encrypted (macOS Keychain, or the Linux keyring through Electron's `safeStorage`).
+2. **Video tools.** Stoa downloads Python with the Kokoro voice, ffmpeg, a headless Chrome and the
+   whisper speech-timing model, about 1 GB, into its app-data folder. Every file is pinned to a
+   version, and the ones Stoa downloads itself are checked against a SHA-256. `whisper-cli` ships
+   inside the app. Videos are part of every lesson, so setup finishes only when the tools work.
+
+Data lives in the OS app-data folder (`~/Library/Application Support/Stoa` on macOS,
+`~/.config/Stoa` on Linux): `data/` (database and topics), `runtimes/` (video tools) and
+`logs/server.log`.
+
+Build it yourself:
+
+```bash
+npm install
+npm run sync-skills
+npm run build:whisper   # needs git, cmake and a C compiler; builds vendor/whisper/<platform>/whisper-cli
+npm run desktop         # run the app from source
+npm run dist            # package: release/*.dmg + .zip (macOS) or .AppImage + .deb (Linux)
+```
+
+`npm run desktop:dev` runs the app with the Vite dev server (hot reload for the web app). Build
+each package on its own OS and CPU; `.github/workflows/desktop.yml` does this for macOS arm64/x64
+and Linux x64/arm64. macOS packages are signed and notarized when the signing secrets are set.
+Windows is not supported yet.
+
+## Server setup (browser or Docker)
 
 ### Requirements
 
@@ -103,6 +137,9 @@ saved sessions), open the **⋯** menu in the topic header and choose **Delete t
 | `ANTHROPIC_API_KEY` | (none) | Claude access, if you do not use a Claude Code login |
 | `CHROME_PATH` | (found automatically) | Chrome or Chromium that Athena uses to check figures |
 
+The desktop app sets these itself. For testing, `STOA_USER_DATA=/some/folder` gives it a separate
+profile (data, video tools and API key).
+
 ## Costs and safety
 
 - The agents use your Claude account. As a rough guide, one lesson with a two-minute video cost
@@ -124,7 +161,9 @@ docker run -d --name stoa -p 3210:3210 -v stoa-data:/data -e ANTHROPIC_API_KEY=s
 ## Project layout
 
 ```
-server/         Hono server: API, agent runner, MCP tools for Athena and the tutor, lesson bridge
+server/         Hono server: API, agent runner, MCP tools for Athena and the tutor, lesson bridge,
+                desktop setup (Claude access, video tool installer)
+desktop/        Electron shell: starts the server, window, API key storage
 web/            React app (Vite)
 shared/         Design tokens and the lesson kit, shared by the app and the lessons
 agent/plugin/   Claude Code plugin: skills (teach, lesson-video; HyperFrames and anatomy after sync), lesson-editor agent

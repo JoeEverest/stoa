@@ -1,0 +1,62 @@
+# Desktop packages for macOS (arm64, x64) and Linux (x64, arm64). Each package is built on its own
+# OS and CPU: the Claude Code binary (an Agent SDK optional dependency) and whisper-cli are native.
+name: Desktop builds
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, name: mac-arm64 }
+          - { os: macos-15-intel, name: mac-x64 }
+          - { os: ubuntu-22.04, name: linux-x64 }
+          - { os: ubuntu-22.04-arm, name: linux-arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Copy the HyperFrames and anatomy skills into the plugin
+        run: npm run sync-skills
+
+      - name: Cache whisper-cli
+        uses: actions/cache@v4
+        with:
+          path: vendor/whisper
+          key: whisper-v1.9.5-${{ matrix.name }}-${{ hashFiles('scripts/build-whisper.sh') }}
+
+      - name: Build whisper-cli
+        run: npm run build:whisper
+
+      - name: Package
+        run: npm run dist
+        env:
+          # macOS signing and notarization run only when these secrets exist.
+          CSC_LINK: ${{ secrets.MAC_CERTIFICATE }}
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.MAC_CERTIFICATE != '' }}
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: stoa-${{ matrix.name }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.AppImage
+            release/*.deb
+          if-no-files-found: error

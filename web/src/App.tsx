@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { marked } from "marked";
 import { api, useArrivals, usePoll, useThread, type Lesson, type Message, type Topic, type TopicState } from "./api";
 import * as I from "./icons";
+import { Setup } from "./Setup";
 
 // ---- Routing: #/ (new topic), #/t/<topic>, #/t/<topic>/<lesson-id | ref:reference/x.html> ----
 
@@ -41,7 +42,30 @@ function useTheme() {
   return [pref, setPref] as const;
 }
 
+/** The desktop app shows setup until Claude access and the video tools are ready. */
 export function App() {
+  const [setupDone, setSetupDone] = useState(false);
+  const setup = usePoll(setupDone ? null : api.setup, 1000, [setupDone]);
+  const shown = useRef(false);
+  const s = setup.data;
+  useEffect(() => {
+    // Ready on the first check (or not the desktop app): go straight in, no setup screen.
+    if (s && s.ready && !shown.current) setSetupDone(true);
+    if (s && !s.ready) shown.current = true;
+  }, [s]);
+  if (setupDone) return <Main />;
+  if (!s) {
+    return (
+      <div className="center" style={{ height: "100%" }}>
+        {setup.error ? <p className="error" role="alert">{setup.error}</p> : <I.Spinner label="Starting Stoa" />}
+      </div>
+    );
+  }
+  if (!s.desktop) return <Main />;
+  return <Setup state={s} onChange={setup.refresh} onDone={() => setSetupDone(true)} />;
+}
+
+function Main() {
   const { topicId, view } = useHash();
   const topics = usePoll(api.topics, 4000, []);
   const [theme, setTheme] = useTheme();

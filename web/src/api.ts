@@ -15,6 +15,24 @@ export type TopicState = {
 export type Message = { id: number; role: "user" | "assistant" | "activity"; content: string; created_at: string };
 export type Reference = { file: string; title: string };
 
+export type SetupStep = {
+  id: string; label: string; status: "pending" | "running" | "done" | "error";
+  bytes: number; total: number | null; error: string | null;
+};
+export type ClaudeAccess = {
+  mode: "login" | "apiKey" | null;
+  login: { email: string | null; plan: string | null; provider: string | null } | null;
+};
+export type SetupState =
+  | { desktop: false; ready: true }
+  | {
+      desktop: true; ready: boolean; claude: ClaudeAccess;
+      tools: { managed: false } | {
+        managed: true; supported: boolean; platform: string; whisper: boolean; ready: boolean;
+        installing: boolean; error: string | null; steps: SetupStep[];
+      };
+    };
+
 async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
@@ -27,6 +45,9 @@ async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
 }
 
 export const api = {
+  setup: () => req<SetupState>("GET", "/api/setup"),
+  checkClaude: () => req<SetupState>("POST", "/api/setup/claude/check"),
+  installTools: () => req("POST", "/api/setup/tools/install"),
   topics: () => req<Topic[]>("GET", "/api/topics"),
   createTopic: (message: string) => req<{ id: string }>("POST", "/api/topics", { message }),
   topic: (id: string) => req<TopicState>("GET", `/api/topics/${id}`),

@@ -1,27 +1,31 @@
 {
   "name": "stoa",
   "version": "1.0.0",
-  "description": "A self-hosted learning app where an AI teacher builds lessons, videos and exercises for you.",
-  "main": "index.js",
+  "description": "A learning app where an AI teacher builds lessons, videos and exercises for you.",
+  "main": "dist/desktop/main.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently -k -n server,web -c blue,green \"tsx watch --clear-screen=false server/index.ts\" \"vite\"",
     "build": "vite build",
     "start": "node server/index.ts",
     "typecheck": "tsc --noEmit",
-    "sync-skills": "bash scripts/sync-skills.sh"
+    "sync-skills": "bash scripts/sync-skills.sh",
+    "build:main": "esbuild desktop/main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/desktop/main.mjs",
+    "desktop": "npm run build && npm run build:main && electron .",
+    "desktop:dev": "npm run build:main && concurrently -k -n web,app -c green,magenta \"vite\" \"wait-on -t 60000 tcp:5173 && STOA_DEV_URL=http://localhost:5173 electron .\"",
+    "build:whisper": "bash scripts/build-whisper.sh",
+    "dist": "npm run build && npm run build:main && electron-builder --publish never"
   },
-  "keywords": [],
-  "author": "",
+  "author": {
+    "name": "Joe Everest"
+  },
   "license": "MIT",
   "type": "module",
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.296",
     "@hono/node-server": "^2.1.4",
     "hono": "^4.13.13",
-    "marked": "^18.1.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "hyperframes": "0.9.20",
+    "npm": "^11.21.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -30,11 +34,20 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.6",
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "marked": "^18.1.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4"
+    "vite": "^8.3.4",
+    "wait-on": "^9.5.1"
   },
   "engines": {
     "node": ">=22.18"
-  }
+  },
+  "productName": "Stoa",
+  "homepage": "https://github.com/JoeEverest/stoa"
 }

@@ -4,6 +4,7 @@ import { query, type Options, type SDKMessage } from "@anthropic-ai/claude-agent
 import { Lessons, Messages, Runs, Topics, type Run } from "./db.ts";
 import { PLUGIN_DIR, topicDir } from "./paths.ts";
 import { teacherMcp, tutorMcp } from "./mcp.ts";
+import { runtimeEnv } from "./runtimes.ts";
 import { TEACHER_SYSTEM, buildPrompt, intakePrompt, intakeReply, tutorSystem } from "./prompts.ts";
 
 const MODEL = process.env.LEARN_MODEL ?? "claude-opus-5-5";
@@ -15,6 +16,9 @@ const TEACHER_SKILLS = [
   "deep-research",
   "dataviz",
 ];
+
+/** The agents' environment: this process's, plus the desktop app's video tools when installed. */
+const agentEnv = () => ({ ...process.env, ...runtimeEnv(), CLAUDE_AGENT_SDK_CLIENT_APP: "stoa/0.1.0" });
 
 /** One promise chain per key. Teacher runs use the topic ID; tutor runs use topic + lesson. */
 const chains = new Map<string, Promise<void>>();
@@ -101,7 +105,7 @@ function teacherOptions(topicId: string, resume?: string): Options {
     mcpServers: { learn: teacherMcp(topicId) },
     permissionMode: "bypassPermissions",
     allowDangerouslySkipPermissions: true,
-    env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: "stoa/0.1.0" },
+    env: agentEnv(),
   };
 }
 
@@ -156,7 +160,7 @@ export function sendTutorMessage(topicId: string, lessonId: string, text: string
         permissionMode: "dontAsk",
         settingSources: [],
         mcpServers: { tutor: tutorMcp(topicId, lessonId) },
-        env: { ...process.env, CLAUDE_AGENT_SDK_CLIENT_APP: "stoa/0.1.0" },
+        env: agentEnv(),
       },
       onSession: (id) => Lessons.setTutorSession(topicId, lessonId, id),
     });

@@ -16,7 +16,8 @@ ENV HYPERFRAMES_PYTHON=/opt/py/bin/python \
 
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# Electron is only for the desktop build; skip its binary download here.
+RUN ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci
 COPY . .
 RUN npm run build
 

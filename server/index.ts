@@ -1,4 +1,5 @@
 import { Hono, type Context } from "hono";
+import { getCookie } from "hono/cookie";
 import { serve } from "@hono/node-server";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,8 +9,22 @@ import { Lessons, Messages, Responses, Runs, Topics } from "./db.ts";
 import { APP_ROOT, WEB_DIST, resolveInTopic, topicDir } from "./paths.ts";
 import { requestNextLesson, sendIntakeMessage, sendTutorMessage, stopTopicRuns, stopTopicRunsAndWait } from "./runner.ts";
 import { deleteAgentSessions, killProcessesIn, removeFolder } from "./cleanup.ts";
+import { DESKTOP, checkClaude, setApiKey, setupState, startToolInstall } from "./setup.ts";
+import { writeShims } from "./runtimes.ts";
 
 const app = new Hono();
+const port = Number(process.env.PORT ?? 3210);
+
+// The desktop app runs this server on 127.0.0.1 for its own window only. Other local programs and
+// web pages (DNS rebinding) must not reach it: require the app's Host and its per-launch cookie.
+const TOKEN = process.env.STOA_TOKEN;
+if (TOKEN) {
+  const hosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`]);
+  app.use("*", async (c, next) => {
+    if (!hosts.has(c.req.header("host") ?? "") || getCookie(c, "stoa_token") !== TOKEN) return c.text("Forbidden", 403);
+    await next();
+  });
+}
 const BRIDGE = fs.readFileSync(path.join(APP_ROOT, "server", "bridge.js"), "utf8");
 // Lesson pages get the app's tokens and lesson kit, so Athena's pages look native.
 const readShared = (f: string) => fs.readFileSync(path.join(APP_ROOT, "shared", f), "utf8");
@@ -228,6 +243,16 @@ api.post("/topics/:id/lessons/:lesson/tutor", async (c) => {
   return c.json({ ok: true });
 });
 
+// ---- Desktop setup (Claude access, video tools) ----
+
+api.get("/setup", async (c) => c.json(await setupState()));
+api.post("/setup/claude/check", async (c) => {
+  if (!DESKTOP) return c.notFound();
+  await checkClaude(true);
+  return c.json(await setupState());
+});
+api.post("/setup/tools/install", (c) => (DESKTOP ? c.json(startToolInstall()) : c.notFound()));
+
 app.route("/api", api);
 
 // ---- React app (production build) ----
@@ -240,7 +265,29 @@ app.get("*", (c) => {
   return c.html(fs.readFileSync(path.join(WEB_DIST, "index.html"), "utf8"));
 });
 
-const port = Number(process.env.PORT ?? 3210);
-serve({ fetch: app.fetch, port, hostname: process.env.HOST ?? "127.0.0.1" }, () => {
-  console.log(`learning-app server on http://localhost:${port}`);
+writeShims();
+
+const server = serve({ fetch: app.fetch, port, hostname: process.env.HOST ?? "127.0.0.1" }, (info) => {
+  console.log(`Stoa server on http://localhost:${info.port}`);
+  process.parentPort?.postMessage({ type: "listening", port: info.port });
 });
+
+// Messages from the desktop shell (Electron utilityProcess).
+process.parentPort?.on("message", async (e: { data: any }) => {
+  const msg = e.data;
+  if (msg?.type === "api-key") {
+    await setApiKey(msg.key ?? null);
+    process.parentPort?.postMessage({ type: "api-key-applied" });
+  } else if (msg?.type === "shutdown") {
+    await shutdown();
+  }
+});
+
+/** Stop every agent run (and the tools it started) before the process ends. */
+async function shutdown() {
+  server.close();
+  await Promise.allSettled(Topics.list().map((t) => stopTopicRunsAndWait(t.id, 5000)));
+  process.exit(0);
+}
+process.once("SIGTERM", shutdown);
+process.once("SIGINT", shutdown);
