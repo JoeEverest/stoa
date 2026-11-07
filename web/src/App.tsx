@@ -204,6 +204,17 @@ function Classroom({ state, view, refresh, menu }: {
   const lesson = lessons.find((l) => l.id === current) ?? null;
   const refFile = current?.startsWith("ref:") ? current.slice(4) : null;
   const src = lesson ? `/w/${topic.id}/${lesson.file}` : refFile ? `/w/${topic.id}/${refFile}` : null;
+
+  // Keep the pages the learner visited loaded in hidden frames, so switching to a reference and
+  // back does not reload a lesson and lose what was typed. Hiding a frame keeps its document;
+  // only removing it would reload. At most KEEP pages stay loaded.
+  const KEEP = 6;
+  const [pages, setPages] = useState<string[]>([]);
+  useEffect(() => {
+    if (!src) return;
+    setPages((p) => (p.includes(src) ? p : [...p, src].slice(-KEEP)));
+  }, [src]);
+  const shownPages = src && !pages.includes(src) ? [...pages, src] : pages;
   const doneCount = lessons.filter((l) => l.completed_at).length;
   const buildingNext = state.buildingNew;
   const makingVideo = building && !buildingNext && lessons.at(-1)?.video_status === "planned";
@@ -217,6 +228,12 @@ function Classroom({ state, view, refresh, menu }: {
       if (e.origin !== location.origin || e.data?.source !== "learn") return;
       refresh();
       if (e.data.type === "complete") flash("Lesson finished. Athena is preparing the next one.");
+      // A link inside a lesson to another workspace page: change the app's view, not the frame.
+      if (e.data.type === "navigate" && typeof e.data.data?.path === "string") {
+        const path: string = e.data.data.path;
+        const lessonMatch = path.match(/^lessons\/([^/]+)\.html?$/);
+        go(topic.id, lessonMatch ? lessonMatch[1] : `ref:${path}`);
+      }
     };
     addEventListener("message", on);
     return () => removeEventListener("message", on);
@@ -295,7 +312,9 @@ function Classroom({ state, view, refresh, menu }: {
           )}
         </nav>
         <section className="stage" aria-label={lesson?.title ?? "Lesson"}>
-          {src ? <iframe key={src} src={src} title={lesson?.title ?? "Reference"} />
+          {src ? shownPages.map((p) => (
+            <iframe key={p} src={p} hidden={p !== src} title={p === src ? lesson?.title ?? "Reference" : "Hidden page"} />
+          ))
             : <BuildingPlaceholder topicId={topic.id} message={topic.status_message} />}
         </section>
         {lesson && tutorOpen && <Tutor key={lesson.id} topicId={topic.id} lesson={lesson} busy={state.tutorBusy.includes(lesson.id)} />}
@@ -423,6 +442,10 @@ function TopicMenu({ topic, onDeleted }: { topic: Topic; onDeleted: () => void }
     setDeleting(true);
     try {
       await api.deleteTopic(topic.id);
+      // The lesson bridge keeps answer drafts in this browser; remove them too.
+      try {
+        for (const k of Object.keys(localStorage)) if (k.startsWith(`stoa-draft:${topic.id}:`)) localStorage.removeItem(k);
+      } catch { /* storage unavailable */ }
       dialog.current?.close();
       onDeleted();
     } catch (e) {

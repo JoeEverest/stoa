@@ -77,6 +77,7 @@ async function execute({ run, topicId, thread, prompt, options, onSession }: Run
       try {
         if (pending) Messages.add(topicId, thread, "assistant", pending);
         Runs.finish(run, "error", message, cost);
+        if (Runs.get(run)?.kind !== "tutor") Lessons.abandonPlannedVideos(topicId, `The video was not finished: ${message}`);
         Messages.add(topicId, thread, "activity", `The agent stopped: ${message}`);
       } catch { /* topic removed mid-write */ }
     }

@@ -37,6 +37,9 @@ Stoa web app ◀────── server (Hono + SQLite) ◀── answers, tut
 - Lesson pages are HTML that Athena writes. The app injects its lesson kit (so every lesson looks
   like part of Stoa, with colors Athena picks for each topic) and a small script that sends your
   answers to SQLite.
+- Lessons follow a writing guide (plain, calm, a specific example before the rule, one name per
+  term). A second agent edits each lesson against it, and a script checks the reading grade
+  against the level the learner gave at intake.
 - Videos are made with [HyperFrames](https://www.npmjs.com/package/hyperframes) (HTML + GSAP
   rendered to MP4), a local Kokoro voice, and ffmpeg.
 
@@ -64,7 +67,7 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Design system: [DESIG
 git clone https://github.com/JoeEverest/stoa.git
 cd stoa
 npm install
-npm run sync-skills     # copies the HyperFrames skills that the video work uses into agent/plugin
+npm run sync-skills     # copies the HyperFrames and anatomy skills into agent/plugin
 npm run build
 npm start               # http://localhost:3210
 ```
@@ -98,6 +101,7 @@ saved sessions), open the **⋯** menu in the topic header and choose **Delete t
 | `LEARN_MODEL` | `claude-opus-5-5` | Athena's model |
 | `TUTOR_MODEL` | same as `LEARN_MODEL` | Tutor model |
 | `ANTHROPIC_API_KEY` | (none) | Claude access, if you do not use a Claude Code login |
+| `CHROME_PATH` | (found automatically) | Chrome or Chromium that Athena uses to check figures |
 
 ## Costs and safety
 
@@ -123,7 +127,7 @@ docker run -d --name stoa -p 3210:3210 -v stoa-data:/data -e ANTHROPIC_API_KEY=s
 server/         Hono server: API, agent runner, MCP tools for Athena and the tutor, lesson bridge
 web/            React app (Vite)
 shared/         Design tokens and the lesson kit, shared by the app and the lessons
-agent/plugin/   Claude Code plugin with the agents' skills (teach, lesson-video; HyperFrames after sync)
+agent/plugin/   Claude Code plugin: skills (teach, lesson-video; HyperFrames and anatomy after sync), lesson-editor agent
 docs/           Architecture notes
 ```
 
@@ -135,6 +139,9 @@ docs/           Architecture notes
   license is in [agent/plugin/skills/teach/LICENSE](agent/plugin/skills/teach/LICENSE).
 - Videos are built with [HyperFrames](https://www.npmjs.com/package/hyperframes); its skills are
   installed by `npm run sync-skills` and are not part of this repository.
+- Explainer figures use the [anatomy](https://github.com/wheresryan22/anatomy) skill (MIT
+  License). `npm run sync-skills` copies it from `~/.claude/skills/anatomy`, or clones it from
+  GitHub; it is not part of this repository.
 
 ## License
 

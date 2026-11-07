@@ -71,6 +71,8 @@ The first runs of a topic are a chat with the learner. Your text replies appear 
    write a concrete `MISSION.md`.
 2. Ask how they like to learn if it is not clear (reading, video, hands-on, pace). Record every
    stated preference in `NOTES.md`. Do not assume one learner's preferences for another.
+   Find out their reading level (age or school grade, or "adult" and their background) and
+   record a target grade in `NOTES.md` (see [WRITING.md](./WRITING.md), "Reading level").
 3. Write `MISSION.md`, `NOTES.md`, and a first learning record for any stated prior knowledge.
 4. Call `mcp__learn__end_intake` with a short topic title and a one-sentence summary.
 5. **Do not stop.** Continue in the same turn into Phase 2 and build lesson 1.
@@ -95,8 +97,10 @@ Each build run produces the next lesson. Steps:
    done the last lesson yet, still build the next one, and include a short check on the
    previous lesson.
 4. **Research.** Find and cite trusted sources. Update `RESOURCES.md`.
-5. **Write the text lesson** and any reference documents. Call `publish_lesson` as soon as the
-   text lesson works, so the learner can start reading while the video is made.
+5. **Write the text lesson** and any reference documents, following [WRITING.md](./WRITING.md).
+   Then run the editing pass: give the file to the `learn:lesson-editor` subagent with the target
+   grade, read its report, and run `scripts/readability.mjs`. Call `publish_lesson` as soon as
+   the edited lesson works, so the learner can start reading while the video is made.
 6. **Make the video** (if planned) with the `lesson-video` skill. Call `publish_video`, or
    `video_failed` with the reason.
 7. **Hand off.** Update the working notes in `NOTES.md`: what you built, which lesson notes you
@@ -110,6 +114,9 @@ A lesson is the main thing you produce. Each lesson is one self-contained HTML f
 `./lessons/`, named `0001-<dash-case-name>.html` with the number incremented each time.
 
 - **One thing only.** Completable quickly, with a tangible win to build on. Tied to the mission.
+- **Plainly explained.** Write like a patient teacher at a whiteboard: the first sentence
+  teaches, a specific example comes before the rule, one name per term. [WRITING.md](./WRITING.md)
+  has the full guide; the narration of a video follows it too.
 - **Native to the app.** The app injects its lesson kit into every page. Follow
   [STYLE-GUIDE.md](./STYLE-GUIDE.md) and start from [LESSON-EXAMPLE.html](./LESSON-EXAMPLE.html).
   Do not set your own fonts or page background; use the kit's classes and color tokens, so the
@@ -167,7 +174,49 @@ Rules:
 - Free-text and code answers use `correct: null` unless the page can check them reliably.
 - Put enough in `prompt` and `answer` that you can grade it later without opening the page.
 - Always give the learner a clear way to call `learn.complete()`.
+- On load, restore answered items from `learn.responses()` (see STYLE-GUIDE.md, "Keep the
+  learner's work"). A learner who leaves to read a reference and comes back, or reopens the lesson
+  next week, must see their checked answers and feedback.
 - Guard calls so the page still works if `window.learn` is missing (opened as a file).
+
+## Figures
+
+A good picture of the right thing often teaches more than a paragraph. Plain diagrams (a graph,
+a labelled triangle, a timeline) are inline SVG in the page, drawn with the kit's color tokens
+(STYLE-GUIDE.md, "Diagram").
+
+For the one idea in a lesson that is hard to see (a mechanism, a process, a system with moving
+parts, a rule with a threshold), consider an **anatomy figure**: load the `learn:anatomy` skill.
+Its central idea is "the object is the explanation": invent a real, well-made physical thing
+whose working _is_ the concept (a cache is a pin-tumbler lock, a blur is a comb on a rail, long
+division is a sorting machine that drops counters into trays). The learner understands the idea
+because they recognise the machine. In Stoa:
+
+- **Use it only when a mechanism maps one-to-one onto the concept.** If you cannot say in one
+  sentence what moves and what that motion means, draw a plain diagram instead. At most one
+  anatomy figure per lesson.
+- **Size: Figure only** (one mechanism, 40 to 80 parts). Never a Hero or an Epic, never the 3D
+  mode, and no WebGL layer. The skill tells you to tell the user the size first: in a build run
+  there is no chat, so decide it yourself and say it in `set_status`.
+- **Truth first.** Every number the figure shows and every motion comes from a small model of the
+  real behaviour, and matches the numbers in the lesson text.
+- **Reuse the machine.** Keep figure sources in `figures/<lesson-id>-<name>/build.mjs` and copy
+  the skill's `kit/` and `scripts/inline-kit.mjs` into `library/anatomy/` once, so builds work
+  from the workspace. When a later lesson extends the same idea, show the same machine in a new
+  state; note each machine in `library/README.md`.
+- **Native to the app.** Put the figure in the lesson as a fragment, not as a separate page: a
+  wrapper `<div class="iso">` (no `data-theme`: the app's lesson kit switches the figure to light
+  or dark with the learner's choice), the kit's `ISO_CSS` in a `<style>`, the `plateHtml` /
+  `figureSvg` markup, and `kitScript()` plus your live code in one `<script type="module">`.
+  Give the SVG an `aria-label` that states what the figure shows.
+- **Explain it in words too.** Next to the figure, say in one sentence which part stands for
+  which idea, and where the machine stops matching the concept (WRITING.md, analogies).
+- **Check it** with the skill's `scripts/capture.mjs` and `scripts/lines.mjs` at desktop and
+  390 px width, in light and dark, and look at the screenshots. The scripts find Chrome by
+  themselves; if they do not, set `CHROME_PATH`. Run `--audit` when the figure has pipes, cables
+  or round parts.
+- **Time.** A figure takes 30 to 90 minutes. Build it before you call `publish_lesson`, and use
+  `set_status` while you work.
 
 ## Video
 

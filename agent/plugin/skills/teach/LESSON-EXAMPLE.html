@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Split the velocity</title>
+<title>How to get the sideways and upward speeds from a launch</title>
 <!-- The app injects /stoa/lesson.css and the learn bridge. Only lesson-specific CSS goes here. -->
 <style>
   .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s-4); }
@@ -12,17 +12,14 @@
 <body>
 <main>
   <p class="meta"><span>Lesson 2</span><span>About 12 minutes</span><span>Projectile motion</span></p>
-  <h1>Split the velocity</h1>
-  <p class="lede">A launch gives you one speed and one angle. The two rules from lesson 1 need two speeds: one sideways, one upward. Trigonometry converts the first form into the second.</p>
+  <h1>How to get the sideways and upward speeds from a launch</h1>
+  <p class="lede">In lesson 1 you used two speeds: the sideways speed and the upward speed. But when you throw something, you usually know one speed and an angle instead, like "20 m/s at 35°". This lesson shows you how to turn that into the two speeds your program needs. It takes one right triangle and two lines of trigonometry.</p>
 
-  <div class="callout">
-    <p><strong>Why this matters for your mission.</strong> <code>vx = v·cos(θ)</code> and <code>vy = v·sin(θ)</code> are the first two lines of every trajectory program.</p>
-  </div>
 
   <div data-learn-video></div>
 
-  <h2>The split</h2>
-  <p>Draw the launch speed as an arrow at the launch angle. Drop a line straight down from its tip to the ground. You now have a right triangle: the arrow is the hypotenuse, the ground side is the sideways speed, and the vertical side is the upward speed <a class="cite" href="https://openstax.org/books/university-physics-volume-1/pages/4-3-projectile-motion">[OpenStax University Physics, 4.3]</a>.</p>
+  <h2>The launch speed as a right triangle</h2>
+  <p>Draw the launch speed as an arrow at the launch angle. From the tip of the arrow, draw a line straight down to the ground. You now have a right triangle. The arrow is its longest side, called the <span class="term">hypotenuse</span>. The side along the ground is the sideways speed, <span class="math">v<sub>x</sub></span>. The vertical side is the upward speed, <span class="math">v<sub>y</sub></span> <a class="cite" href="https://openstax.org/books/university-physics-volume-1/pages/4-3-projectile-motion">[OpenStax University Physics, 4.3]</a>.</p>
 
   <figure>
     <svg class="diagram" viewBox="0 0 600 260" role="img" aria-label="A launch arrow at 35 degrees split into a horizontal arrow vx and a vertical arrow vy">
@@ -36,17 +33,17 @@
       <text x="220" y="240" fill="var(--viz-1)" font-family="var(--math)" font-style="italic" font-size="22">v<tspan font-size="15" dy="5">x</tspan></text>
       <text x="395" y="130" fill="var(--viz-2)" font-family="var(--math)" font-style="italic" font-size="22">v<tspan font-size="15" dy="5">y</tspan></text>
     </svg>
-    <figcaption>The launch arrow is the hypotenuse. Its shadow on the ground is <span class="math">v<sub>x</sub></span>; its height is <span class="math">v<sub>y</sub></span>.</figcaption>
+    <figcaption>The launch arrow is the hypotenuse. The side along the ground is the sideways speed, <span class="math">v<sub>x</sub></span>. The vertical side is the upward speed, <span class="math">v<sub>y</sub></span>.</figcaption>
   </figure>
 
-  <p>Cosine gives the side next to the angle, and sine gives the side opposite it:</p>
+  <p>Now the trigonometry. Cosine gives the side next to the angle, so it gives the sideways speed. Sine gives the side opposite the angle, so it gives the upward speed. Keep the <a href="../reference/velocity-components.html">velocity components sheet</a> open if it helps.</p>
   <div class="formula">
     <p>v<sub>x</sub> = v · cos θ</p>
     <p>v<sub>y</sub> = v · sin θ</p>
   </div>
 
   <details>
-    <summary>Why sine is the vertical one</summary>
+    <summary>Why sine gives the upward speed</summary>
     <p>The angle sits at the ground. The side opposite that corner is the vertical side, and sine is “opposite over hypotenuse”. Quick check: at 90° the throw is straight up, and sin 90° = 1.</p>
   </details>
 
@@ -90,24 +87,34 @@
   const near = (a, b) => Math.abs(a - b) <= 0.2;
   const show = (el, cls, text) => { el.innerHTML = ""; const p = document.createElement("p"); p.className = cls; p.textContent = text; el.append(p); };
 
-  document.getElementById("ex1-check").addEventListener("click", () => {
-    const vx = parseFloat(document.getElementById("vx").value), vy = parseFloat(document.getElementById("vy").value);
+  function showEx1(vx, vy) {
     const okx = near(vx, 16.4), oky = near(vy, 11.5);
     document.getElementById("vx").className = "input " + (okx ? "is-correct" : "is-wrong");
     document.getElementById("vy").className = "input " + (oky ? "is-correct" : "is-wrong");
     const fb = document.getElementById("ex1-feedback");
-    if (okx && oky) show(fb, "feedback ok", "Both right. 20 · cos 35° ≈ 16.4 and 20 · sin 35° ≈ 11.5.");
+    if (okx && oky) show(fb, "feedback ok", "Both right. You used cos for the sideways speed and sin for the upward speed: 20 · cos 35° ≈ 16.4 and 20 · sin 35° ≈ 11.5.");
     else if (near(vy, 14.1) || near(vx, 13.7)) { show(fb, "feedback bad", "Not yet."); fb.insertAdjacentHTML("beforeend", '<p class="hint">Check that your calculator is in degrees: sin 35° ≈ 0.574, so v<sub>y</sub> ≈ 11.5 m/s.</p>'); }
-    else show(fb, "feedback bad", "Not yet. Which side is next to the angle, and which is opposite?");
-    learn.submit({ itemId: "ex1", prompt: "20 m/s at 35°: find vx and vy", answer: { vx, vy }, correct: okx && oky });
+    else show(fb, "feedback bad", "Not yet. Check which function you used for each speed. The sideways speed is next to the angle, so it uses cos. The upward speed is opposite the angle, so it uses sin.");
+    return okx && oky;
+  }
+  document.getElementById("ex1-check").addEventListener("click", () => {
+    const vx = parseFloat(document.getElementById("vx").value), vy = parseFloat(document.getElementById("vy").value);
+    const ok = showEx1(vx, vy);
+    learn.submit({ itemId: "ex1", prompt: "20 m/s at 35°: find vx and vy", answer: { vx, vy }, correct: ok });
   });
 
-  document.querySelectorAll("#ex2 .option").forEach((b) => b.addEventListener("click", () => {
-    const ok = b.dataset.answer === "down";
-    document.querySelectorAll("#ex2 .option").forEach((o) => { o.className = "option"; o.disabled = true; });
-    b.classList.add(ok ? "is-correct" : "is-wrong");
+  function showEx2(answer) {
+    const ok = answer === "down";
+    document.querySelectorAll("#ex2 .option").forEach((o) => {
+      o.className = "option" + (o.dataset.answer === answer ? (ok ? " is-correct" : " is-wrong") : "");
+      o.disabled = true;
+    });
     show(document.getElementById("ex2-feedback"), "feedback " + (ok ? "ok" : "bad"),
-      ok ? "Right: more of the speed goes up, so less goes sideways." : "Not quite: cos θ falls as θ rises, so less of the speed goes sideways.");
+      ok ? "Right. A bigger angle sends more of the launch speed upward, so the sideways speed gets smaller." : "Not yet. Look at the triangle: as the arrow tilts up, the side along the ground becomes shorter. That side is v_x, so v_x becomes smaller (cos θ falls as θ rises).");
+    return ok;
+  }
+  document.querySelectorAll("#ex2 .option").forEach((b) => b.addEventListener("click", () => {
+    const ok = showEx2(b.dataset.answer);
     learn.submit({ itemId: "ex2", prompt: "Angle increases: what happens to vx?", answer: b.dataset.answer, correct: ok });
   }));
 
@@ -118,9 +125,25 @@
     document.getElementById("why-note").textContent = "Sent. Athena reads it before your next lesson.";
   });
 
+  // Restore answers the learner already checked (the newest record per item wins).
+  if (window.learn) learn.responses().then((records) => {
+    const latest = {};
+    records.forEach((r) => { latest[r.item_id] = r; });
+    if (latest.ex1) {
+      document.getElementById("vx").value = latest.ex1.answer.vx;
+      document.getElementById("vy").value = latest.ex1.answer.vy;
+      showEx1(latest.ex1.answer.vx, latest.ex1.answer.vy);
+    }
+    if (latest.ex2) showEx2(latest.ex2.answer);
+    if (latest.why) {
+      document.getElementById("why").value = latest.why.answer;
+      document.getElementById("why-note").textContent = "Sent. Athena reads it before your next lesson.";
+    }
+  });
+
   document.getElementById("finish").addEventListener("click", () => {
     learn.complete({ summary: "Finished lesson 2" });
-    document.getElementById("done").innerHTML = '<div class="done-card"><p><strong>Lesson finished.</strong> Athena is preparing the next lesson from your answers.</p></div>';
+    document.getElementById("done").innerHTML = '<div class="done-card"><p><strong>Lesson finished.</strong> Athena now makes the next lesson from your answers.</p></div>';
   });
 </script>
 </body>

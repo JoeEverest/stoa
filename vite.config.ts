@@ -9,6 +9,6 @@ export default defineConfig({
   build: { outDir: "../dist/web", emptyOutDir: true },
   server: {
     port: 5173,
-    proxy: { "/api": server, "/w": server, "/bridge.js": server },
+    proxy: { "/api": server, "/w": server, "/bridge.js": server, "/stoa": server },
   },
 });

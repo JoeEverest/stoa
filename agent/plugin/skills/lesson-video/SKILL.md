@@ -76,7 +76,12 @@ Self-host every font with a local `@font-face`. Make any extra sound effects wit
 Write `script.txt`: plain spoken English, one paragraph per voice line, each line one beat of
 the explanation (one to four sentences). Write for the ear:
 
-- Short sentences. One idea per line. Use the glossary's terms exactly.
+- Write the narration in ASD-STE100 Simplified Technical English, as the teach skill's
+  `WRITING.md` describes ("Language"). Technical terms may break the rules.
+- Follow the teach skill's `WRITING.md`: the first line teaches something (no hook, no "get
+  ready for"), a specific example before the rule, things at their real size, no hype.
+- Short sentences. One idea per line. Use the glossary's terms exactly, and the same names as the
+  text lesson. Never a synonym.
 - Spell out what TTS reads badly: "nine point eight metres per second", not "9.8 m/s";
   "v cos theta", not "v·cosθ". Keep symbols on screen, words in the voice.
 - Point at the picture: "watch the shadow on the floor", "the blue arrow is the sideways part".

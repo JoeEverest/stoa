@@ -32,3 +32,21 @@ for s in "${SKILLS[@]}"; do
   cp -RL "$SRC/$s" "$DEST/$s"
   echo "synced $s"
 done
+
+# anatomy (MIT, https://github.com/wheresryan22/anatomy): isometric explanatory figures for
+# lessons. Copied from $SRC/anatomy when it is installed there, else cloned from GitHub.
+# Repository files that the agent does not need (CI, tests, evals) are left out.
+ANATOMY_REPO="${ANATOMY_REPO:-https://github.com/wheresryan22/anatomy.git}"
+anatomy_src="$SRC/anatomy"
+tmp=""
+if [ ! -f "$anatomy_src/SKILL.md" ]; then
+  tmp="$(mktemp -d)"
+  echo "anatomy not found in $SRC; cloning $ANATOMY_REPO"
+  git clone --depth 1 "$ANATOMY_REPO" "$tmp/anatomy" >/dev/null 2>&1 || { echo "warning: could not clone anatomy, skipped" >&2; rm -rf "$tmp"; exit 0; }
+  anatomy_src="$tmp/anatomy"
+fi
+rm -rf "$DEST/anatomy"
+mkdir -p "$DEST/anatomy"
+(cd "$anatomy_src" && tar -cf - --exclude .git --exclude .github --exclude tests --exclude evals --exclude agents --exclude 'scripts/*.test.mjs' .) | (cd "$DEST/anatomy" && tar -xf -)
+[ -n "$tmp" ] && rm -rf "$tmp"
+echo "synced anatomy"

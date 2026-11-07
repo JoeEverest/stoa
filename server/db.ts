@@ -73,8 +73,13 @@ CREATE TABLE IF NOT EXISTS runs (
 `);
 
 // Runs that were active when the server stopped can not continue.
+db.exec(`UPDATE topics SET status_message = 'Stopped: the server restarted' WHERE id IN
+         (SELECT topic_id FROM runs WHERE status IN ('queued', 'running') AND kind != 'tutor')`);
 db.exec(`UPDATE runs SET status = 'error', error = 'Server restarted', ended_at = datetime('now')
          WHERE status IN ('queued', 'running')`);
+// A planned video that no run is making any more will never arrive.
+db.exec(`UPDATE lessons SET video_status = 'failed', video_message = 'The video was not finished because the server restarted.'
+         WHERE video_status = 'planned'`);
 
 export type Topic = {
   id: string; title: string; phase: "intake" | "learning"; status_message: string | null;
@@ -125,6 +130,9 @@ export const Lessons = {
          video_status = CASE WHEN lessons.video_status = 'ready' AND excluded.video_status = 'planned'
                              THEN lessons.video_status ELSE excluded.video_status END`)
       .run(topicId, id, file, title, videoStatus),
+  /** Mark every planned video of a topic as failed (the run that was making it stopped). */
+  abandonPlannedVideos: (topicId: string, message: string) =>
+    q(`UPDATE lessons SET video_status = 'failed', video_message = ? WHERE topic_id = ? AND video_status = 'planned'`).run(message, topicId),
   setVideo: (topicId: string, id: string, status: string, file: string | null, poster: string | null, message: string | null) =>
     q(`UPDATE lessons SET video_status = ?, video_file = ?, video_poster = ?, video_message = ? WHERE topic_id = ? AND id = ?`)
       .run(status, file, poster, message, topicId, id),

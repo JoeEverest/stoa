@@ -61,17 +61,24 @@ every lesson in the topic.
    series `var(--viz-1)` … `var(--viz-5)` (blue, red, teal, amber, violet), and your topic
    colors `var(--topic)`, `var(--topic-2)` and so on. In canvas code, read
    them with `getComputedStyle(document.documentElement).getPropertyValue("--viz-1")`.
-3. **Structure:** everything inside one `<main>`. Order: `.meta` line, `<h1>`, `.lede`, an optional
-   mission `.callout`, the video area, then sections with `<h2>`, then exercises, then
+3. **Structure:** everything inside one `<main>`. Order: `.meta` line, `<h1>`, `.lede` (which says, in a normal
+   sentence, how this lesson connects to the learner's goal), the video area, then sections with `<h2>`, then exercises, then
    `.lesson-foot`.
 4. **Headings:** one `<h1>` (the lesson title). Sections use `<h2>`, subsections `<h3>`. No labels
-   or kickers above headings. No section numbers unless the order itself matters.
+   or kickers above headings. No section numbers unless the order itself matters. Every title and
+   heading says what the section teaches, in plain words (WRITING.md, "Titles and headings").
 5. **Lesson-specific CSS** goes in a small `<style>` in the page (layout of a simulation, a
    special figure). Reuse spacing tokens `--s-1` … `--s-8` (4 8 12 16 24 32 48 64 px) and radii
    `--r-sm`, `--r-md`, `--r-lg`.
 6. **Accessibility:** every input has a visible `<label>`; diagrams have `role="img"` and an
    `aria-label`; never rely on color alone (the kit's feedback lines add a ✓/✗ icon and text).
-7. **Motion:** only for feedback and for explanation (a simulation, a step-by-step reveal). Keep
+7. **Keep the learner's work.** The app saves what the learner types or picks in any `input`,
+   `textarea` or `select` and puts it back when the page reloads, so give every field a stable
+   `id`. Answers that were already checked must come back too: on load, call
+   `learn.responses()` and restore each answered item (its field classes, the selected option, the
+   feedback line, the score). The example lesson shows how. Links to other lessons and reference
+   pages work as normal links; the app opens them without unloading the lesson.
+8. **Motion:** only for feedback and for explanation (a simulation, a step-by-step reveal). Keep
    feedback and state changes under 300 ms with `var(--ease-out)`; a rare entrance or a progress
    fill may take up to about 500 ms. Explanatory animation can be as long as it needs. Always
    respect `prefers-reduced-motion` (replace movement with a short fade).
@@ -82,13 +89,14 @@ every lesson in the topic.
 |---|---|
 | Meta line | `<p class="meta"><span>Lesson 2</span><span>About 12 minutes</span></p>` |
 | Lede | `<p class="lede">…</p>` |
-| Mission or key-idea box | `<div class="callout"><p><strong>Why this matters for your mission.</strong> …</p></div>` |
+| Key-idea box (a rule or definition the learner should keep; not a goal or a "why this matters") | `<div class="callout"><p>…</p></div>` |
 | Neutral note / warning | `.callout.note`, `.callout.warn` |
 | Video area | `<div data-learn-video></div>` (the app fills it) |
 | Citation | `<a class="cite" href="…">[OpenStax, 4.3]</a>` |
 | Glossary term in text | `<span class="term">velocity</span>` |
 | Formula block | `<div class="formula"><p>v<sub>x</sub> = v · cos θ</p></div>`; inline: `<span class="math">v<sub>x</sub></span>` |
 | Diagram | `<figure><svg class="diagram" viewBox="…" role="img" aria-label="…">…</svg><figcaption>…</figcaption></figure>` |
+| Explainer figure (a machine whose working is the concept) | Anatomy figure inside `<div class="iso">…</div>`, no `data-theme`; see SKILL.md, "Figures" |
 | Code | `<pre><code>…</code></pre>`; inline `<code>` |
 | Real-world steps | `<ol class="steps"><li>…</li></ol>` |
 | Optional depth | `<details><summary>Why sine is the vertical one</summary><p>…</p></details>` |
@@ -105,11 +113,14 @@ every lesson in the topic.
 
 ## Writing in the page
 
+How to explain, the voice (a teacher talking to a student, never marketing copy), and the
+editing pass are in [WRITING.md](./WRITING.md). In short:
+
 - Address the learner as "you". Name Athena when you refer to yourself in the page ("Athena
   reads this before your next lesson"). The side chat is "the tutor".
 - Buttons say what they do: "Check", "Send to Athena", "Finish lesson", "Show the answer".
 - Feedback says what is right or wrong and why, never only "Correct!" or "Wrong".
-- No exclamation marks in feedback; no emoji.
+- No exclamation marks; no emoji. Describe things at their real size, without hype.
 
 ## Reference pages
 
