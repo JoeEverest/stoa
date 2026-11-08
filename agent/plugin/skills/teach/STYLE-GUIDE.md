@@ -19,8 +19,8 @@ white. Nothing else: no other hues, and no "nearby" shades of these.
 
 | Name | Hex | Token | What it is for |
 |---|---|---|---|
-| Charcoal | `#264653` | `--charcoal` | Primary buttons and links (light mode), strong figure lines |
-| Teal | `#2a9d8f` | `--teal` | Correct answers, focus, the topic accent, first diagram series |
+| Teal | `#2a9d8f` | `--teal` | The primary color: buttons and links (deepened by the kit, `--accent`), correct answers, focus, the topic accent, first diagram series |
+| Charcoal | `#264653` | `--charcoal` | Ink: strong figure lines, outlines and labels. Not a fill for buttons, discs or large shapes |
 | Saffron | `#e9c46a` | `--saffron` | Hints and highlights (as a fill or tint, not as thin lines or text on white) |
 | Sandy | `#f4a261` | `--sandy` | A second accent in figures |
 | Sienna | `#e76f51` | `--sienna` | Wrong answers, warnings, the item to watch in a figure |
@@ -31,8 +31,8 @@ white. Nothing else: no other hues, and no "nearby" shades of these.
 - Text: use ink (black) or charcoal on white. Teal, sandy, saffron and sienna are below 4.5:1
   on white, so never use them for body text or small labels; use them for shapes, lines, fills,
   icons and large figure labels.
-- Dark mode: the kit swaps charcoal for teal on actions and links, and white stands in for
-  charcoal in figures. Use the tokens, never the hex values, and dark mode works by itself.
+- Actions and links use `var(--accent)`: teal deepened with black in light mode (so white button
+  text passes AA), plain teal in dark mode. White stands in for charcoal in dark-mode figures. Use the tokens, never the hex values, and dark mode works by itself.
 - Check your page with `mcp__learn__preview_page`: it renders it in both themes and lists any
   text below 4.5:1 contrast and any color outside the palette.
 - The app enforces the tokens: it loads the palette after your styles, so `--topic`, `--viz-*`,
@@ -80,6 +80,30 @@ with a `-soft` tint.
    fill may take up to about 500 ms. Explanatory animation can be as long as it needs. Always
    respect `prefers-reduced-motion` (replace movement with a short fade).
 
+## Page design
+
+The kit does the visual design; the page's job is rhythm and restraint. A lesson that reads as a
+wall of text, or as a stack of boxes, fails even when every sentence is right.
+
+- **Lede: two or three sentences, about 50 words at most.** What the learner will be able to do
+  and how it connects to their goal. It is not a summary of every section.
+- **Break up prose.** No more than three paragraphs in a row without something to look at: a
+  figure, a table, a code block, a worked example, a key-idea box. Paragraphs stay at four
+  sentences or fewer.
+- **One key-idea box per section at most,** for the one rule worth keeping. Several boxes in a
+  row mean none of them stands out.
+- **Inline `<code>` is for short identifiers and values** (`nums`, `Map`, `[1, 2]`). An
+  expression longer than about 30 characters, or anything with a line break, goes in a
+  `<pre><code>` block.
+- **Citations go at the end of the sentence they support,** once per source per section, not
+  after every mention.
+- **Exercises use the kit components as they are.** The exercise is already a panel: do not wrap
+  its parts in extra boxes, and do not give options, inputs, code blocks or buttons your own
+  borders, backgrounds or shadows in the page `<style>`. Use `.hint-line` only when how to answer
+  is not obvious ("Pick an answer to check it." is obvious for a list of options).
+- **Page `<style>` is for layout only** (a simulation's grid, a figure's size), never to restyle
+  kit components.
+
 ## Components
 
 | Need | Markup |
@@ -101,6 +125,8 @@ with a `-soft` tint.
 | Buttons | `.btn` (secondary), `.btn.btn-primary` (one main action per exercise), `.btn-quiet` |
 | Exercise | `<section class="exercise"><span class="count">Exercise 1 of 3</span><h2>Question</h2> … <div class="actions"><button class="btn btn-primary">Check</button></div></section>` |
 | Text or number input | `<div class="fields"><div class="field"><label for="a">…</label><input class="input" id="a"></div></div>`; long answer: `<textarea class="input">` |
+| Code answer | `<textarea class="input code" id="…" spellcheck="false">` (code font, tab stops, no wrapping) |
+| Choose from a list | `<select class="input" id="…">` (the kit draws the chevron) |
 | Input result | add `is-correct` or `is-wrong` to the `.input` |
 | Multiple choice | `<div class="options"><button class="option">…</button>…</div>`; mark `is-selected`, `is-correct`, `is-wrong`; disable after answering if one try only |
 | Feedback line | `<p class="feedback ok">Right: …</p>` or `<p class="feedback bad">Not yet: …</p>` |
@@ -127,7 +153,8 @@ each page a `<title>`; the app lists references by their title.
 
 ## Videos
 
-Videos use the lesson palette too: white or `#f7f7f8` background (or a charcoal `#264653`
-title card), ink `#0f0f11`, and only `#264653 #2a9d8f #e9c46a #f4a261 #e76f51` for accents and
-diagram series (in that role order: teal, sienna, saffron, sandy, charcoal). One neutral sans
+Videos use the lesson palette too: white or `#f7f7f8` background (title cards too; no charcoal
+slabs), ink `#0f0f11`, teal `#2a9d8f` as the primary color for what matters on each screen, and
+only `#2a9d8f #e9c46a #f4a261 #e76f51 #264653` for accents and diagram series (in that role order:
+teal, sienna, saffron, sandy, charcoal). Charcoal is for ink-weight lines and labels, not fills. One neutral sans
 for all on-screen text. The `lesson-video` skill has the details.

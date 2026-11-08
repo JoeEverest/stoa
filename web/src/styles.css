@@ -168,14 +168,64 @@ svg { flex: none; }
 
 /* ---------- New topic ---------- */
 .new-topic-page { flex: 1; overflow: auto; display: flex; justify-content: center; padding: var(--s-7) var(--s-5); }
-.new-topic-inner { width: min(680px, 100%); margin: auto 0; padding-bottom: 6vh; display: flex; flex-direction: column; gap: var(--s-4); }
+.new-topic-inner { width: min(720px, 100%); margin: auto 0; padding-bottom: 6vh; display: flex; flex-direction: column; gap: var(--s-4); }
+/* Returning learner: "Learn something new" is the second section, under the continue card. */
+.new-topic-h2 { margin-top: var(--s-5); font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.015em; }
+.new-topic-h2 + .lead { margin-top: calc(-1 * var(--s-3)); font-size: var(--text-ui); line-height: 22px; color: var(--ink-3); }
 .new-topic-inner h1 { font-size: 32px; line-height: 40px; font-weight: 650; letter-spacing: -0.025em; }
 .lead { font-size: 16px; line-height: 26px; color: var(--ink-2); max-width: 60ch; margin-bottom: var(--s-2); }
 .examples { margin-top: var(--s-4); display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); }
 .examples-label { font-size: var(--text-xs); font-weight: 500; color: var(--ink-3); margin-bottom: 2px; }
 /* Continue learning (home page, returning learner) */
-.continue { margin-bottom: var(--s-6); }
-.continue-label { font-size: var(--text-xs); font-weight: 500; color: var(--ink-3); margin-bottom: var(--s-2); }
+.continue { display: flex; flex-direction: column; gap: var(--s-3); }
+.continue-label { font-size: var(--text-sm); font-weight: 500; color: var(--ink-3); }
+
+/* The continue card: the next lesson's video on the left, where you are and one button on the right. */
+.continue-card {
+  display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: var(--s-5); align-items: center;
+  padding: var(--s-3); border-radius: calc(var(--r-lg) + var(--s-3)); /* outer radius = inner + padding */
+  background: var(--bg); border: 1px solid var(--line); box-shadow: var(--shadow-1);
+  transition: border-color var(--t-fast) ease, box-shadow var(--t-state) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .continue-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-2); }
+}
+.continue-card:focus-visible { box-shadow: var(--ring); border-radius: calc(var(--r-lg) + var(--s-3)); }
+.continue-media {
+  position: relative; aspect-ratio: 16 / 9; border-radius: var(--r-lg); overflow: hidden; background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line); isolation: isolate;
+}
+.continue-media :is(video, img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.continue-media img { transition: opacity var(--t-state) ease; }
+.continue-media.is-previewing img { opacity: 0; }
+html:root[data-theme="dark"] .continue-media:not(.is-previewing) img { filter: brightness(0.82); }
+.continue-media::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06); pointer-events: none; }
+.continue-play {
+  position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+  transition: opacity var(--t-state) ease, transform var(--t-state) var(--ease-out);
+}
+.continue-media.is-previewing .continue-play { opacity: 0; transform: scale(0.9); }
+.continue-length {
+  position: absolute; right: 8px; bottom: 8px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62); color: #fff; font-size: var(--text-xs); line-height: 16px; font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.continue-media-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-4); }
+.continue-body { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); padding-right: var(--s-3); }
+.continue-kicker { font-size: var(--text-sm); font-weight: 500; color: var(--accent-ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.continue-title { font-size: 19px; line-height: 26px; font-weight: 600; letter-spacing: -0.012em; color: var(--ink-1); text-wrap: balance; }
+.continue-progress { display: flex; align-items: center; gap: var(--s-2); width: 100%; font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.continue-progress .meter { flex: 1; max-width: 140px; }
+.continue-cta { margin-top: var(--s-2); pointer-events: none; }
+@media (hover: hover) and (pointer: fine) {
+  .continue-card:hover .continue-cta { background: var(--accent-hover); }
+}
+.continue-card:active .continue-cta { transform: scale(0.97); }
+@media (max-width: 640px) {
+  .continue-card { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .continue-body { padding: 0 var(--s-2) var(--s-2); }
+}
+
 .continue-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--bg); overflow: hidden; }
 .continue-list li + li { border-top: 1px solid var(--line); }
 .continue-item {
@@ -406,17 +456,6 @@ div.ref:hover { background: transparent; color: var(--ink-2); }
 
 .stage { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
 .stage-frames { flex: 1; min-height: 0; display: flex; }
-.stage-bar {
-  flex: none; display: flex; align-items: center; gap: var(--s-3); height: 44px; padding: 0 var(--s-5);
-  border-bottom: 1px solid var(--line); font-size: var(--text-sm); color: var(--ink-3);
-}
-.back-link {
-  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 var(--s-2); margin-left: calc(-1 * var(--s-2));
-  border-radius: var(--r-sm); color: var(--ink-1); font-weight: 500; transition: background-color var(--t-fast) ease;
-  margin-left: calc(var(--s-6) - var(--s-5) - var(--s-2)); /* the arrow lines up with the page's text column */
-}
-.back-link:hover { background: var(--surface-2); }
-.stage-kind { margin-left: auto; }
 .stage iframe[hidden] { display: none; }
 .stage iframe { flex: 1; border: 0; width: 100%; height: 100%; background: var(--bg); color-scheme: normal; }
 
@@ -468,7 +507,26 @@ div.ref:hover { background: transparent; color: var(--ink-2); }
 /* Hidden sidebar (desktop widths): it slides away fully, like a Mac app's sidebar. */
 @media (min-width: 861px) {
   .shell.rail-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
-  .shell.rail-collapsed .rail { visibility: hidden; overflow: hidden; padding: 0; border-right: 0; }
+  /* The sleeve leaves the grid (position: fixed), so the page must keep its own column. */
+  .shell.rail-collapsed > .main { grid-column: 2; grid-row: 1; }
+  /* Collapsed, the sidebar waits off-screen as a sleeve (App.tsx, usePeek) that slides out over the
+     page from the window's left edge. A transition, so a quick in-and-out reverses smoothly. */
+  .shell.rail-collapsed .rail {
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 300; width: 248px;
+    visibility: hidden; transform: translateX(-100%);
+    transition: transform 150ms var(--ease-out), box-shadow 150ms ease, visibility 0s linear 150ms;
+  }
+  .shell.rail-collapsed.rail-peek .rail {
+    visibility: visible; transform: none; box-shadow: var(--shadow-2);
+    transition: transform var(--t-state) var(--ease-out), box-shadow var(--t-state) ease, visibility 0s;
+  }
+  /* The strip that opens it: the window's left edge, below the title-bar row (the traffic lights). */
+  .rail-edge { position: fixed; left: 0; top: 44px; bottom: 0; width: 10px; z-index: 15; }
+}
+@media (max-width: 860px), (hover: none) { .rail-edge { display: none; } }
+@media (min-width: 861px) and (prefers-reduced-motion: reduce) {
+  .shell.rail-collapsed .rail { transform: none; opacity: 0; transition: opacity 150ms ease, visibility 0s linear 150ms; }
+  .shell.rail-collapsed.rail-peek .rail { opacity: 1; transition: opacity 150ms ease, visibility 0s; }
 }
 @media (max-width: 860px) {
   /* One 16px gutter for every phone container. */
@@ -547,7 +605,6 @@ div.ref:hover { background: transparent; color: var(--ink-2); }
   .outline.open { padding-bottom: var(--s-3); }
   .refs { margin-top: var(--s-4); }
   .stage { flex: 1 0 auto; height: auto; min-height: 60vh; }
-  .stage-bar { padding: 0 var(--s-4); }
   .tutor {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; height: min(78vh, 640px);
     border: 1px solid var(--line); border-bottom: 0; border-radius: var(--r-lg) var(--r-lg) 0 0;
@@ -816,7 +873,6 @@ select.field { appearance: none; padding-right: 32px; cursor: pointer;
   .shell.rail-collapsed .topbar { padding-left: var(--s-3); }
 
   .main-toggle { top: 6px; left: var(--s-2); }
-  .stage-bar { height: 36px; }
   .tutor-head { padding: var(--s-3) var(--s-4) var(--s-3) !important; }
 }
 
@@ -836,10 +892,13 @@ select.field { appearance: none; padding-right: 32px; cursor: pointer;
 .platform-darwin .rail-head { height: 44px; padding-left: 72px; }
 .platform-darwin .rail-head .brand { display: none; }
 .platform-darwin .rail-toggle { margin-left: auto; } /* open: far right of the sidebar's top row */
-.platform-darwin .main-toggle { top: 6px; left: 76px; }
+/* Sidebar collapsed: the toggle sits at the left edge, just under the traffic lights. */
+.platform-darwin .main-toggle { top: 52px; left: 8px; }
 .platform-darwin .new-topic { margin-top: var(--s-1); }
 @media (min-width: 861px) {
-  .platform-darwin .shell.rail-collapsed :is(.topbar, .settings-top) { padding-left: 76px; } /* collapsed: the toggle follows the traffic lights */
+  .platform-darwin .shell.rail-collapsed :is(.topbar, .settings-top) { padding-left: 76px; } /* clear of the traffic lights */
+  .platform-darwin .shell.rail-collapsed .topbar-toggle { position: absolute; top: 52px; left: 8px; z-index: 20; margin: 0; }
+  .platform-darwin .shell.rail-collapsed :is(.topbar-toggle, .main-toggle) .rail-icon-btn { background: var(--bg); }
   .platform-darwin .shell.rail-collapsed .new-topic-page { padding-top: 64px; }
 }
 
@@ -877,3 +936,38 @@ select.field { appearance: none; padding-right: 32px; cursor: pointer;
 .update-badge { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--highlight); box-shadow: 0 0 0 2px var(--surface-2); }
 .update-btn.is-ready { background: var(--accent-soft); }
 @media (hover: hover) and (pointer: fine) { .update-btn.is-ready:hover { background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface-3)); } }
+
+/* ---------- Motion: things that appear ----------
+   Each plays once, when the element appears; nothing here runs on a keyboard shortcut. Content
+   the learner reads (lesson pages) only fades; chrome may also rise 4px or slide from its side.
+   Reduced motion keeps the fades and drops the movement (end of this block). Fill mode is
+   "backwards": no transform is left on the element afterwards, since one would change how its
+   position: fixed children (the phone tutor's scrim, toasts) are placed. */
+@keyframes view-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes panel-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+@keyframes icon-in { from { opacity: 0; transform: scale(0.6); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes pop-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
+
+/* Switching page: home, a topic, settings. */
+.new-topic-inner, .classroom, .settings-inner { animation: view-in var(--t-state) var(--ease-out) backwards; }
+/* Switching lesson or reference inside a topic: the page fades in, it does not move. */
+.stage iframe:not([hidden]) { animation: fade 160ms ease backwards; }
+/* The open topic's lessons and files in the sidebar. */
+.topic-tree > * { animation: view-in var(--t-state) var(--ease-out) backwards; }
+/* The tutor comes in from its side of the window. Phone widths use the sheet (sheet-in) instead. */
+@media (min-width: 861px) { .tutor { animation: panel-in var(--t-state) var(--ease-out) backwards; } }
+/* Settings and setup: a new set of fields, a result, an update. */
+.conn-fields, .conn .settings-ok, .conn .setup-error, .conn > .error, .update-card, .signin .settings-note,
+.updates > .error { animation: view-in var(--t-state) var(--ease-out) backwards; }
+/* The sidebar's theme icon when it changes, and the update button when one arrives. */
+.theme-cycle.swapped svg { animation: icon-in var(--t-state) var(--ease-out) backwards; }
+.update-btn { animation: pop-in var(--t-state) var(--ease-out) backwards; }
+.update-badge { animation: pop-in var(--t-state) var(--ease-out) 120ms backwards; }
+/* The "show sidebar" button, once the sidebar has slid away. */
+.shell.rail-collapsed :is(.topbar-toggle, .main-toggle) { animation: fade var(--t-state) ease 80ms backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .new-topic-inner, .classroom, .settings-inner, .topic-tree > *, .tutor, .conn-fields, .conn .settings-ok, .conn .setup-error,
+  .conn > .error, .update-card, .signin .settings-note, .updates > .error, .update-btn, .update-badge { animation-name: fade; }
+  .theme-cycle.swapped svg { animation: fade var(--t-state) ease backwards; }
+}

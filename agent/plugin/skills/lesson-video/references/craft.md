@@ -50,6 +50,11 @@ A viewer gets ~1–3 seconds per screen on a phone, with the sound often off.
 - **Stoa's palette is fixed.** Only charcoal `#264653`, teal `#2a9d8f`, saffron `#e9c46a`, sandy
   `#f4a261` and sienna `#e76f51`, plus black and white (and grays between them). No other hues,
   and do not tint neutrals toward a hue. Light text goes on charcoal; dark text on the other four.
+- **Teal is the primary colour, not charcoal.** The one thing that matters on a screen (the current
+  step, the active cell, the key shape, a number disc) is teal. Charcoal is ink: text-weight lines,
+  outlines and small labels. Do not fill large shapes, step discs or title cards with charcoal; on
+  a light frame those read as heavy black blocks. A title card is white or `#f7f7f8` with a teal
+  mark, not a charcoal slab.
 - One accent, used for the one thing that matters on each screen. Two accents means neither wins.
 - On coloured backgrounds, secondary text is a darker/lighter shade of that background hue, not grey.
 - Contrast: support text ≥ 4.5:1, large text ≥ 3:1 — `npx hyperframes check` measures it. White
@@ -100,7 +105,8 @@ block decides). Then:
 - A frosted card at 80 % white over a plain gradient reads as solid white. The blur only shows with
   colour shapes behind it and the card around 55–65 % white.
 - White text on a mid colour fails contrast; every tester hit it. With the Stoa palette, white
-  text belongs only on charcoal (#264653); on teal, saffron, sandy or sienna use black text.
+  text belongs only on charcoal (#264653); on teal, saffron, sandy or sienna use black text. Large
+  white numerals (36px and up) on teal are fine; small white text on teal is not.
 - Testers liked restraint but called the cards "plain": give each screen one confident move — a
   colour block, an oversized number, a drawn line — rather than another neutral card.
 - A material idea taken from the brand itself (for Dproz: the hand-drawn wordmark became a pen

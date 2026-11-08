@@ -48,12 +48,15 @@
 }
 :where(a:hover) { text-decoration-color: var(--accent); }
 :where(code, kbd, samp) { font-family: var(--mono); font-size: 0.875em; }
-:where(:not(pre) > code) { padding: 1px 6px; border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
+:where(:not(pre) > code) {
+  padding: 0.12em 0.38em; border-radius: 5px; background: var(--surface-3); color: var(--ink-1);
+  font-size: 0.85em; overflow-wrap: anywhere; -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
 :where(kbd) { padding: 1px 6px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); border-bottom-width: 2px; background: var(--bg); }
 :where(pre) {
   margin: var(--s-5) 0 0; padding: var(--s-4) var(--s-5); border-radius: var(--r-lg);
-  background: var(--surface-2); border: 1px solid var(--line);
-  overflow-x: auto; font-size: 0.875rem; line-height: 1.6;
+  background: var(--surface-2); border: 1px solid transparent;
+  overflow-x: auto; overscroll-behavior-x: contain; font-size: 0.875rem; line-height: 1.65; tab-size: 2;
 }
 :where(pre code) { font-variant-ligatures: none; }
 :where(blockquote) { margin: var(--s-5) 0 0; padding: 0 0 0 var(--s-4); border-left: 2px solid var(--line-strong); color: var(--ink-2); }
@@ -63,7 +66,7 @@
 :where(img, svg, video) { max-width: 100%; }
 :where(img, video) { height: auto; display: block; }
 :where(table) { margin: var(--s-5) 0 0; width: 100%; border-collapse: collapse; font-size: var(--text-ui); font-variant-numeric: tabular-nums; }
-:where(th) { text-align: left; font-weight: 600; color: var(--ink-2); border-bottom: 1px solid var(--line-strong); padding: var(--s-2) var(--s-3); }
+:where(th) { text-align: left; font-size: var(--text-sm); font-weight: 500; color: var(--ink-3); border-bottom: 1px solid var(--line-strong); padding: var(--s-2) var(--s-3); vertical-align: bottom; }
 :where(td) { border-bottom: 1px solid var(--line); padding: var(--s-2) var(--s-3); vertical-align: top; }
 :where(td.num, th.num) { text-align: right; }
 :where(figure) { margin: var(--s-6) 0 0; }
@@ -89,10 +92,10 @@
 /* ---------- Lesson parts ---------- */
 .meta { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; margin: 0 0 var(--s-4); font-size: var(--text-sm); line-height: 1.4; color: var(--ink-3); }
 .meta > * + *::before { content: "·"; margin-right: var(--s-3); color: var(--ink-4); }
-.lede { margin-top: var(--s-4); font-size: var(--text-lede); line-height: 1.6; color: var(--ink-2); max-width: 64ch; }
+.lede { margin-top: var(--s-4); font-size: var(--text-lede); line-height: 1.6; color: var(--ink-2); max-width: 60ch; text-wrap: pretty; }
 
 .callout {
-  margin: var(--s-5) 0 0; padding: var(--s-4); border-radius: var(--r-lg);
+  margin: var(--s-5) 0 0; padding: var(--s-4) var(--s-5); border-radius: var(--r-lg);
   background: var(--topic-soft); color: var(--ink-1);
   font-size: 0.9375rem; line-height: 1.6;
 }
@@ -112,7 +115,8 @@
 .math { font-family: var(--math); font-style: italic; font-size: 1.1em; }
 .math sub { font-style: italic; }
 
-.cite { font-size: 0.875em; white-space: nowrap; }
+.cite { font-size: 0.8em; color: var(--ink-3); text-decoration-color: transparent; white-space: nowrap; transition: color var(--t-fast) ease, text-decoration-color var(--t-fast) ease; }
+@media (hover: hover) and (pointer: fine) { .cite:hover { color: var(--accent-ink); text-decoration-color: currentColor; } }
 .term { font-weight: 600; text-decoration: underline dotted var(--topic); text-underline-offset: 4px; }
 
 .diagram { display: block; width: 100%; height: auto; border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--surface-2); }
@@ -143,31 +147,58 @@
   box-shadow: var(--shadow-1);
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-fast) ease, border-color var(--t-fast) ease;
 }
-.btn:hover { background: var(--surface-2); border-color: var(--ink-4); }
-.btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .btn:hover:not(:disabled) { background: var(--surface-2); border-color: var(--ink-4); } }
+.btn:active:not(:disabled) { transform: scale(0.97); }
 .btn:disabled { opacity: 0.5; cursor: default; transform: none; }
 .btn-primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
-.btn-primary:hover { background: var(--accent-hover); border-color: transparent; }
+@media (hover: hover) and (pointer: fine) { .btn-primary:hover:not(:disabled) { background: var(--accent-hover); border-color: transparent; } }
 .btn-quiet { border-color: transparent; box-shadow: none; background: transparent; color: var(--ink-2); }
 
-/* ---------- Exercises ---------- */
-.exercise { margin: var(--s-7) 0 0; padding: var(--s-5); border: 1px solid var(--line); border-radius: var(--r-lg); }
-.exercise > h2, .exercise > h3 { margin-top: 0; font-size: var(--text-body); line-height: 1.5; letter-spacing: 0; text-wrap: pretty; }
+/* ---------- Exercises ----------
+   An exercise is a quiet tinted panel, not a frame: what the learner acts on (options, code,
+   fields) sits on it as raised white tiles, so nothing is a border inside a border. In dark mode
+   the tiles are the lighter surface, which reads as closer. */
+.exercise {
+  --tile: var(--bg);
+  margin: var(--s-7) 0 0; padding: var(--s-5); border-radius: 16px;
+  background: var(--surface-2); border: 1px solid transparent; /* the border draws an edge in forced colors */
+}
+:root[data-theme="dark"] .exercise { --tile: var(--surface-3); }
+.exercise .count {
+  display: block; float: none; margin: 0 0 var(--s-2);
+  font-size: var(--text-xs); line-height: 16px; font-weight: 600; letter-spacing: 0.01em; color: var(--accent-ink);
+  font-variant-numeric: tabular-nums;
+}
+.exercise > h2, .exercise > h3 { margin-top: 0; font-size: 1.125rem; line-height: 1.45; font-weight: 600; letter-spacing: -0.005em; text-wrap: pretty; }
+.exercise > p { color: var(--ink-2); }
 .exercise > .field, .exercise > .options { margin-top: var(--s-4); }
-.exercise .count { float: right; margin-left: var(--s-4); font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.exercise .actions { margin-top: var(--s-5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+.exercise :where(pre, details, .input, textarea) { background: var(--tile); }
+/* Code editors a topic styles itself (library/code-runner.css) sit on the panel as tiles too. */
+.exercise .coder textarea.code, .exercise textarea.input.code { background: var(--tile); }
+.exercise .btn:not(.btn-primary):not(.btn-quiet) { background: var(--tile); }
+.exercise :where(pre) { border-color: var(--line); }
+.exercise :where(details) { border-color: var(--line); }
+.exercise .actions { margin-top: var(--s-5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-4); }
 /* Nothing left to show (the button hid itself, the note is empty): no reserved space. */
 .exercise .actions:not(:has(> :not([hidden]):not(:empty))) { display: none; }
 
 .fields { margin-top: var(--s-5); display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-4); }
-.field > label, .field > .label { display: block; margin-bottom: var(--s-2); font-size: var(--text-ui); font-weight: 500; color: var(--ink-2); }
+.field > label, .field > .label { display: block; margin-bottom: var(--s-2); font-size: var(--text-sm); font-weight: 500; color: var(--ink-2); }
 .input {
   width: 100%; min-height: 44px; padding: 0 var(--s-3); border-radius: var(--r-md);
-  border: 1px solid var(--line-strong); background: var(--bg); color: var(--ink-1);
+  border: 1px solid var(--line-strong); background: var(--tile, var(--bg)); color: var(--ink-1);
   font: 500 1rem/1.4 var(--font); font-variant-numeric: tabular-nums;
   transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease, background-color var(--t-fast) ease;
 }
 textarea.input { padding: var(--s-3); min-height: 120px; font-weight: 400; line-height: 1.6; resize: none; field-sizing: content; }
+/* Code answers: the code font, tab stops, no wrapping. */
+textarea.input.code, .input.code { font: 400 0.875rem/1.65 var(--mono); tab-size: 2; white-space: pre; overflow-x: auto; font-variant-ligatures: none; }
+/* Native selects keep their behavior; the kit draws the chevron so they match the inputs. */
+select.input {
+  appearance: none; -webkit-appearance: none; padding-right: 40px; cursor: pointer; font-weight: 400;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%);
+  background-position: calc(100% - 21px) 52%, calc(100% - 16px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+}
 .input:focus { outline: none; border-color: var(--accent); box-shadow: var(--field-ring); }
 .input.is-correct { border-color: var(--ok); background: var(--ok-soft); }
 .input.is-wrong { border-color: var(--bad); background: var(--bad-soft); }
@@ -177,12 +208,12 @@ textarea.input { padding: var(--s-3); min-height: 120px; font-weight: 400; line-
 .option {
   display: flex; align-items: center; gap: var(--s-3); width: 100%; text-align: left;
   min-height: 48px; padding: var(--s-3) var(--s-4); border-radius: var(--r-md);
-  border: 1px solid var(--line-strong); background: var(--bg); color: var(--ink-1);
+  border: 1px solid var(--line); background: var(--tile, var(--bg)); color: var(--ink-1); box-shadow: var(--shadow-1);
   font: 400 1rem/1.5 var(--font); cursor: pointer;
   transition: transform var(--t-press) var(--ease-out), border-color var(--t-fast) ease, background-color var(--t-fast) ease;
 }
-.option:hover { border-color: var(--ink-4); background: var(--surface-2); }
-.option:active { transform: scale(0.99); }
+@media (hover: hover) and (pointer: fine) { .option:hover:not([disabled]) { border-color: var(--line-strong); } }
+.option:active:not([disabled]) { transform: scale(0.99); }
 .option input { accent-color: var(--accent); margin: 0; }
 .option.is-selected, .option:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .option.is-correct { border-color: var(--ok); background: var(--ok-soft); }
@@ -193,7 +224,7 @@ button.option::before {
   box-shadow: inset 0 0 0 1.5px var(--line-strong); background: var(--bg);
   transition: box-shadow var(--t-fast) ease;
 }
-button.option:hover::before { box-shadow: inset 0 0 0 1.5px var(--ink-4); }
+@media (hover: hover) and (pointer: fine) { button.option:hover:not([disabled])::before { box-shadow: inset 0 0 0 1.5px var(--ink-3); } }
 button.option.is-selected::before { box-shadow: inset 0 0 0 5px var(--accent); }
 button.option.is-correct::before { box-shadow: inset 0 0 0 5px var(--ok); }
 button.option.is-wrong::before { box-shadow: inset 0 0 0 5px var(--bad); }
@@ -217,6 +248,8 @@ button.option.is-wrong::before { box-shadow: inset 0 0 0 5px var(--bad); }
   animation: stoa-rise var(--t-state) var(--ease-out) both;
 }
 .hint-line { margin-top: var(--s-1); font-size: var(--text-sm); color: var(--ink-3); }
+.exercise > h2 + .hint-line, .exercise > h3 + .hint-line { margin-top: var(--s-1); }
+.exercise > :where(pre, .formula, figure, table) + .hint-line { margin-top: var(--s-3); }
 .score { font-size: var(--text-ui); font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
 /* Completion card: shown after learn.complete() */
@@ -229,8 +262,14 @@ button.option.is-wrong::before { box-shadow: inset 0 0 0 5px var(--bad); }
 
 /* ---------- Video area (filled by the app bridge) ---------- */
 [data-learn-video] { margin-top: var(--s-6); }
-.learn-video { position: relative; border-radius: var(--r-lg); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); animation: stoa-fade var(--t-enter) var(--ease-out) both; }
-.learn-video-player { width: 100%; aspect-ratio: 16 / 9; display: block; background: var(--surface-2); object-fit: contain; }
+/* The player is one object: the picture with its controls lying on it (server/bridge.js). White
+   controls over a dark scrim read on any frame, light or dark, in both themes. */
+.learn-video { position: relative; animation: stoa-fade var(--t-enter) var(--ease-out) backwards; }
+.learn-video-frame {
+  position: relative; overflow: hidden; border-radius: var(--r-lg); background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--line); isolation: isolate;
+}
+.learn-video-player { width: 100%; aspect-ratio: 16 / 9; display: block; background: var(--surface-2); object-fit: contain; cursor: pointer; }
 .learn-video.is-started .learn-video-player { background: #000; }
 /* Video frames are rendered light. In dark mode the poster rests a little dimmer, so it does not
    outshine the page, and comes up to full brightness on hover and once the video plays. */
@@ -238,53 +277,97 @@ html:root[data-theme="dark"] .learn-video:not(.is-started) .learn-video-player {
 @media (hover: hover) and (pointer: fine) {
   html:root[data-theme="dark"] .learn-video:not(.is-started):hover .learn-video-player { filter: none; }
 }
-.learn-video-player { cursor: pointer; }
 
-/* The player's bar, under the picture (it never covers the drawing). */
-.learn-video-bar { position: relative; margin-top: var(--s-3); display: flex; align-items: center; gap: var(--s-3); }
-.learn-video-play {
-  flex: none; display: inline-flex; align-items: center; gap: var(--s-2); height: 40px; padding: 0 var(--s-4) 0 var(--s-3);
-  border: 0; border-radius: var(--r-md); cursor: pointer; font: 600 var(--text-ui)/1 var(--font);
-  background: var(--accent); color: var(--on-accent); box-shadow: var(--shadow-1);
-  transition: transform var(--t-press) var(--ease-out), background-color var(--t-fast) ease;
+/* Before the first play: one round play button in the middle and the length in the corner. */
+.learn-video-big {
+  position: absolute; left: 50%; top: 50%; z-index: 2; width: 64px; height: 64px; margin: -32px 0 0 -32px;
+  display: grid; place-items: center; border: 0; border-radius: 50%; cursor: pointer;
+  background: var(--accent); color: var(--on-accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: transform var(--t-press) var(--ease-out), background-color var(--t-fast) ease, opacity var(--t-state) ease;
 }
-.learn-video-play:hover { background: var(--accent-hover); }
-.learn-video-play:active { transform: scale(0.97); }
-.learn-video-play:focus-visible { border-radius: var(--r-md); }
-/* Once the video has started the button is a compact play/pause. */
-.learn-video.is-started + .learn-video-bar .learn-video-play { width: 40px; padding: 0; justify-content: center; }
-.learn-video.is-started + .learn-video-bar .learn-video-play-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.learn-video-big svg { width: 44px; height: 44px; } /* triangle about a third of the circle; centered by its centroid */
+.learn-video-big:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .learn-video-big:hover { background: var(--accent-hover); transform: scale(1.04); }
+  .learn-video-big:hover:active { transform: scale(0.96); }
+}
+.learn-video-big:focus-visible { box-shadow: var(--ring); }
+.learn-video-length {
+  position: absolute; right: 12px; bottom: 12px; z-index: 2; padding: 3px 8px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62); color: #fff; font: 500 var(--text-xs)/16px var(--font); font-variant-numeric: tabular-nums;
+  transition: opacity var(--t-state) ease;
+}
+.learn-video-length:empty { display: none; }
+.learn-video.is-started:not(.is-ended) :is(.learn-video-big, .learn-video-length) { opacity: 0; pointer-events: none; }
 
-.learn-video-seek {
-  flex: 1; min-width: 60px; height: 20px; margin: 0; background: transparent; cursor: pointer;
-  -webkit-appearance: none; appearance: none; --p: 0%;
+/* Once started: the controls on a soft scrim along the bottom of the picture. */
+.learn-video-controls {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 28px 12px 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.32) 55%, transparent);
+  color: #fff; opacity: 0; transform: translateY(4px); pointer-events: none;
+  transition: opacity var(--t-state) ease, transform var(--t-state) var(--ease-out);
 }
-.learn-video-seek::-webkit-slider-runnable-track {
-  height: 4px; border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) var(--p), var(--line-strong) var(--p));
+.learn-video.is-started:not(.is-ended) .learn-video-controls { opacity: 1; transform: none; pointer-events: auto; }
+/* Before the first play they show on hover or keyboard focus, so speed and "Remake" stay reachable. */
+.learn-video:not(.is-started):focus-within .learn-video-controls { opacity: 1; transform: none; pointer-events: auto; }
+.learn-video:not(.is-started):focus-within .learn-video-length { opacity: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .learn-video:not(.is-started) .learn-video-frame:hover .learn-video-controls { opacity: 1; transform: none; pointer-events: auto; }
+  .learn-video:not(.is-started) .learn-video-frame:hover .learn-video-length { opacity: 0; }
 }
-.learn-video-seek::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line-strong); }
-.learn-video-seek::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
-.learn-video-seek::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%;
-  background: var(--bg); box-shadow: 0 0 0 2px var(--accent), var(--shadow-1);
-}
-.learn-video-seek::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--bg); box-shadow: 0 0 0 2px var(--accent); }
-.learn-video-seek:focus-visible { box-shadow: none; }
-.learn-video-seek:focus-visible::-webkit-slider-thumb { box-shadow: var(--ring); }
-.learn-video-time { flex: none; min-width: 4.5em; font-size: var(--text-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; text-align: right; }
+.learn-video.is-idle .learn-video-controls { opacity: 0 !important; transform: translateY(4px) !important; pointer-events: none !important; transition-duration: 400ms; }
+.learn-video.is-idle .learn-video-player { cursor: none; }
+.learn-video-row { display: flex; align-items: center; gap: 2px; }
+.learn-video-spacer { flex: 1; }
+.learn-video-time { margin-left: 6px; font: 500 var(--text-sm)/1 var(--font); font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.92); white-space: nowrap; }
 
 .learn-video-icon {
-  flex: none; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm);
-  background: transparent; color: var(--ink-2); cursor: pointer; transition: background-color var(--t-fast) ease, color var(--t-fast) ease;
+  flex: none; min-width: 32px; height: 32px; padding: 0 6px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm);
+  background: transparent; color: #fff; cursor: pointer; font: 600 var(--text-sm)/1 var(--font); font-variant-numeric: tabular-nums;
+  transition: background-color var(--t-fast) ease, transform var(--t-press) var(--ease-out);
 }
-.learn-video-icon:hover, .learn-video-icon[aria-expanded="true"] { background: var(--surface-2); color: var(--ink-1); }
-.learn-video-more-wrap { position: relative; flex: none; }
+.learn-video-icon svg { width: 18px; height: 18px; }
+.learn-video-icon:active { transform: scale(0.96); }
+@media (hover: hover) and (pointer: fine) {
+  .learn-video-icon:hover { background: rgba(255, 255, 255, 0.16); }
+}
+.learn-video-icon[aria-expanded="true"] { background: rgba(255, 255, 255, 0.2); }
+.learn-video-icon:focus-visible, .learn-video-seek:focus-visible { box-shadow: 0 0 0 2px #fff; }
+
+/* The seek bar: thin at rest, thicker with a knob under the pointer or keyboard. */
+.learn-video-seek {
+  display: block; width: 100%; height: 16px; margin: 0 0 2px; background: transparent; cursor: pointer;
+  -webkit-appearance: none; appearance: none; --p: 0%; --h: 3px;
+}
+.learn-video-seek:hover, .learn-video-seek:focus-visible, .learn-video-seek:active { --h: 5px; }
+.learn-video-seek::-webkit-slider-runnable-track {
+  height: var(--h); border-radius: 3px; transition: height var(--t-fast) ease;
+  background: linear-gradient(to right, #fff var(--p), rgba(255, 255, 255, 0.32) var(--p));
+}
+.learn-video-seek::-moz-range-track { height: var(--h); border-radius: 3px; background: rgba(255, 255, 255, 0.32); }
+.learn-video-seek::-moz-range-progress { height: var(--h); border-radius: 3px; background: #fff; }
+.learn-video-seek::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; margin-top: calc((var(--h) - 12px) / 2); border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); transform: scale(0); transition: transform var(--t-fast) var(--ease-out);
+}
+.learn-video-seek::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; transform: scale(0); transition: transform var(--t-fast) var(--ease-out); }
+.learn-video-seek:is(:hover, :focus-visible, :active)::-webkit-slider-thumb { transform: none; }
+.learn-video-seek:is(:hover, :focus-visible, :active)::-moz-range-thumb { transform: none; }
+.learn-video-seek:focus-visible { border-radius: 4px; }
+
+/* Full screen: the same player, edge to edge. */
+.learn-video:fullscreen { display: flex; align-items: center; justify-content: center; background: #000; }
+.learn-video:fullscreen .learn-video-frame { width: 100%; height: 100%; border-radius: 0; box-shadow: none; background: #000; }
+.learn-video:fullscreen .learn-video-player { height: 100%; aspect-ratio: auto; }
+.learn-video:fullscreen .learn-video-controls { padding: 48px 24px 16px; }
+
+/* The ⋯ menu opens above the controls' right end, outside the picture's clip. */
 .learn-video-menu {
-  position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 10; width: 280px; padding: var(--s-2);
+  position: absolute; right: 8px; bottom: 52px; z-index: 10; width: 280px; padding: var(--s-2);
   display: flex; flex-direction: column; gap: var(--s-1);
   background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-2);
-  animation: stoa-rise var(--t-state) var(--ease-out) both;
+  transform-origin: bottom right; animation: stoa-pop var(--t-state) var(--ease-out) backwards;
 }
 .learn-video-menu[hidden] { display: none; }
 .learn-video-menu-label { padding: var(--s-1) var(--s-2) 0; font-size: var(--text-xs); font-weight: 500; color: var(--ink-3); }
@@ -325,16 +408,19 @@ html:root[data-theme="dark"] .learn-video:not(.is-started) .learn-video-player {
 /* Phone widths. Last in the file, so these win over the rules above at equal specificity. */
 @media (max-width: 640px) {
   .lede { font-size: 1.0625rem; line-height: 1.6; }
+  .exercise { padding: var(--s-4); border-radius: var(--r-lg); }
 }
 
 /* ---------- Motion ---------- */
 @keyframes stoa-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 @keyframes stoa-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes stoa-pop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
 @keyframes stoa-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @media (prefers-reduced-motion: reduce) {
   .feedback, .hint, .done-card { animation-name: stoa-fade; }
   .learn-video-wait .bar::after { animation: none; width: 100%; opacity: 0.35; }
-  .btn:active, .option:active, .learn-video-play:active { transform: none; }
+  .btn:active, .option:active, .learn-video-big:active, .learn-video-icon:active { transform: none; }
+  .learn-video-controls { transform: none !important; }
   .learn-video-menu { animation-name: stoa-fade; }
 }
 

@@ -12,10 +12,11 @@
 html:root:not([data-theme="dark"]) {
   --charcoal: #264653; --teal: #2a9d8f; --saffron: #e9c46a; --sandy: #f4a261; --sienna: #e76f51;
 
-  /* Actions, links, the current selection: charcoal (10:1 on white). Focus: teal. */
-  --accent: #264653;
-  --accent-hover: color-mix(in srgb, #264653 82%, #000);
-  --accent-ink: #264653;
+  /* Actions, links, the current selection: teal deepened with 18% black (4.7:1 under white text).
+     Charcoal is for ink and strong figure lines, not for actions. Focus: teal. */
+  --accent: color-mix(in srgb, #2a9d8f 82%, #000);
+  --accent-hover: color-mix(in srgb, #2a9d8f 66%, #000);
+  --accent-ink: color-mix(in srgb, #2a9d8f 66%, #000);
   --accent-soft: color-mix(in srgb, #2a9d8f 12%, #fff);
   --accent-line: color-mix(in srgb, #2a9d8f 45%, #fff);
   --on-accent: #fff;

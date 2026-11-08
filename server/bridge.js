@@ -122,12 +122,17 @@
   }
 
   // ---- Video area: <div data-learn-video></div> ----
-  // The app's own player: play/pause, seek, time, full screen, and a ⋯ menu with playback speed and
-  // "Remake this video…". While Athena remakes a video the old one stays playable, with a note.
+  // The app's own player. Before the first play: the poster, a play button and the length. Once
+  // started, controls lie on the picture (seek, play/pause, time, speed, full screen, ⋯ with speed
+  // and "Remake this video…") and rest out of sight while it plays. The same controls work in full
+  // screen. While Athena remakes a video the old one stays playable, with a note.
   function esc(s) { return String(s || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function fmt(t) { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); }
   var ICON = {
     play: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>',
+    // The big poster button: a softly rounded triangle whose centroid sits on the box's center,
+    // so it looks centered in the circle without a nudge.
+    playBig: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 6.9v10.2a1.2 1.2 0 0 0 1.8 1l8.7-5.1a1.2 1.2 0 0 0 0-2L10 5.9a1.2 1.2 0 0 0-1.8 1z" fill="currentColor"/></svg>',
     pause: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>',
     full: '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg>',
     more: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="8" r="1.1" fill="currentColor"/><circle cx="12.5" cy="8" r="1.1" fill="currentColor"/></svg>',
@@ -155,74 +160,109 @@
     var speed = savedSpeed();
     slot.innerHTML =
       '<div class="learn-video">' +
-        '<video class="learn-video-player" preload="metadata" playsinline src="' + src + '"' + poster + "></video>" +
-      "</div>" +
-      '<div class="learn-video-bar">' +
-        '<button class="learn-video-play" type="button">' + ICON.play + '<span class="learn-video-play-label">Play video</span></button>' +
-        '<input class="learn-video-seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Position in the video">' +
-        '<span class="learn-video-time" aria-live="off">0:00</span>' +
-        '<button class="learn-video-icon learn-video-full" type="button" aria-label="Full screen" title="Full screen">' + ICON.full + "</button>" +
-        '<span class="learn-video-more-wrap">' +
-          '<button class="learn-video-icon learn-video-more" type="button" aria-label="More video options" title="More" aria-haspopup="menu" aria-expanded="false">' + ICON.more + "</button>" +
-          '<span class="learn-video-menu" role="menu" hidden>' +
-            '<span class="learn-video-menu-label">Playback speed</span>' +
-            '<span class="learn-video-speeds" role="group" aria-label="Playback speed">' +
-              SPEEDS.map(function (x) { return '<button type="button" data-speed="' + x + '" aria-pressed="' + (x === speed) + '">' + x + "×</button>"; }).join("") +
-            "</span>" +
-            '<span class="learn-video-menu-sep"></span>' +
-            '<button type="button" class="learn-video-menu-item learn-video-remake" role="menuitem">Remake this video…</button>' +
-            '<form class="learn-video-remake-form" hidden>' +
-              '<label>What should be better? <span>Optional. Athena reads this.</span>' +
-              '<textarea rows="3" placeholder="For example: work through it with me step by step, and let me try first"></textarea></label>' +
-              '<span class="learn-video-form-actions"><button type="button" class="btn btn-quiet learn-video-cancel">Cancel</button>' +
-              '<button type="submit" class="btn btn-primary">Remake video</button></span>' +
-            "</form>" +
+        '<div class="learn-video-frame">' +
+          '<video class="learn-video-player" preload="metadata" playsinline src="' + src + '"' + poster + "></video>" +
+          '<button class="learn-video-big" type="button" aria-label="Play the video">' + ICON.playBig + "</button>" +
+          '<span class="learn-video-length" aria-hidden="true"></span>' +
+          '<div class="learn-video-controls">' +
+            '<input class="learn-video-seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Position in the video">' +
+            '<div class="learn-video-row">' +
+              '<button class="learn-video-icon learn-video-play" type="button" aria-label="Play the video">' + ICON.play + "</button>" +
+              '<span class="learn-video-time" aria-live="off">0:00</span>' +
+              '<span class="learn-video-spacer"></span>' +
+              '<button class="learn-video-icon learn-video-speed" type="button" aria-label="Playback speed" title="Playback speed">' + speed + "×</button>" +
+              '<button class="learn-video-icon learn-video-full" type="button" aria-label="Full screen" title="Full screen (F)">' + ICON.full + "</button>" +
+              '<button class="learn-video-icon learn-video-more" type="button" aria-label="More video options" title="More" aria-haspopup="menu" aria-expanded="false">' + ICON.more + "</button>" +
+            "</div>" +
+          "</div>" +
+        "</div>" +
+        '<span class="learn-video-menu" role="menu" hidden>' +
+          '<span class="learn-video-menu-label">Playback speed</span>' +
+          '<span class="learn-video-speeds" role="group" aria-label="Playback speed">' +
+            SPEEDS.map(function (x) { return '<button type="button" data-speed="' + x + '" aria-pressed="' + (x === speed) + '">' + x + "×</button>"; }).join("") +
           "</span>" +
+          '<span class="learn-video-menu-sep"></span>' +
+          '<button type="button" class="learn-video-menu-item learn-video-remake" role="menuitem">Remake this video…</button>' +
+          '<form class="learn-video-remake-form" hidden>' +
+            '<label>What should be better? <span>Optional. Athena reads this.</span>' +
+            '<textarea rows="3" placeholder="For example: work through it with me step by step, and let me try first"></textarea></label>' +
+            '<span class="learn-video-form-actions"><button type="button" class="btn btn-quiet learn-video-cancel">Cancel</button>' +
+            '<button type="submit" class="btn btn-primary">Remake video</button></span>' +
+          "</form>" +
         "</span>" +
       "</div>" +
       '<p class="learn-video-note" role="status" hidden></p>';
 
-    var box = slot.querySelector(".learn-video"), video = slot.querySelector("video");
-    var play = slot.querySelector(".learn-video-play"), seek = slot.querySelector(".learn-video-seek");
-    var time = slot.querySelector(".learn-video-time"), more = slot.querySelector(".learn-video-more");
+    var box = slot.querySelector(".learn-video"), frame = slot.querySelector(".learn-video-frame"), video = slot.querySelector("video");
+    var play = slot.querySelector(".learn-video-play"), big = slot.querySelector(".learn-video-big"), seek = slot.querySelector(".learn-video-seek");
+    var time = slot.querySelector(".learn-video-time"), length = slot.querySelector(".learn-video-length");
+    var speedBtn = slot.querySelector(".learn-video-speed"), more = slot.querySelector(".learn-video-more");
     var menu = slot.querySelector(".learn-video-menu"), form = slot.querySelector(".learn-video-remake-form");
     video.playbackRate = speed;
 
+    // The controls sit on the picture. While the video plays they fade out after a short rest and
+    // come back when the pointer moves or a control has keyboard focus.
+    var idleTimer = 0;
+    function wake() {
+      box.classList.remove("is-idle");
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(function () { if (!video.paused && menu.hidden && !box.contains(document.activeElement)) box.classList.add("is-idle"); }, 2500);
+    }
+    frame.addEventListener("pointermove", wake);
+    frame.addEventListener("pointerleave", function () { if (!video.paused && menu.hidden) { clearTimeout(idleTimer); box.classList.add("is-idle"); } });
+    box.addEventListener("focusin", wake);
+
+    var lastLabel = "";
     function sync() {
       var d = video.duration, t = video.currentTime;
       var ready = isFinite(d) && d > 0;
       seek.value = ready ? String(Math.round((t / d) * 1000)) : "0";
       seek.style.setProperty("--p", ready ? (t / d) * 100 + "%" : "0%");
-      time.textContent = ready ? (video.currentTime > 0 || !video.paused ? fmt(t) + " / " : "") + fmt(d) : "";
+      time.textContent = ready ? fmt(t) + " / " + fmt(d) : "";
+      length.textContent = ready ? fmt(d) : "";
       var playing = !video.paused && !video.ended;
-      var label = playing ? "Pause" : t > 0 && !video.ended ? "Play" : "Play video";
-      if (play.getAttribute("data-label") !== label) { // only when it changes, not on every time update
-        play.setAttribute("data-label", label);
-        play.innerHTML = (playing ? ICON.pause : ICON.play) + '<span class="learn-video-play-label">' + label + "</span>";
+      var label = playing ? "Pause" : "Play";
+      if (label !== lastLabel) { // only when it changes, not on every time update
+        lastLabel = label;
+        play.innerHTML = playing ? ICON.pause : ICON.play;
         play.setAttribute("aria-label", playing ? "Pause the video" : "Play the video");
+        play.title = (playing ? "Pause" : "Play") + " (Space)";
       }
       box.classList.toggle("is-started", t > 0 || playing);
+      box.classList.toggle("is-playing", playing);
+      box.classList.toggle("is-ended", video.ended);
+      if (!playing) { clearTimeout(idleTimer); box.classList.remove("is-idle"); }
     }
     function toggle() { if (video.paused || video.ended) video.play(); else video.pause(); }
+    function fullscreen() { if (document.fullscreenElement) document.exitFullscreen(); else if (box.requestFullscreen) box.requestFullscreen(); }
     ["loadedmetadata", "timeupdate", "play", "pause", "ended", "seeked"].forEach(function (ev) { video.addEventListener(ev, sync); });
+    video.addEventListener("play", wake);
     play.addEventListener("click", toggle);
-    video.addEventListener("click", toggle);
+    big.addEventListener("click", function () { video.play(); play.focus({ preventScroll: true }); });
+    video.addEventListener("click", function () { if (closedByClick) { closedByClick = false; return; } toggle(); });
+    video.addEventListener("dblclick", fullscreen);
     seek.addEventListener("input", function () {
       if (isFinite(video.duration)) video.currentTime = (Number(seek.value) / 1000) * video.duration;
       sync();
     });
-    slot.querySelector(".learn-video-full").addEventListener("click", function () {
-      if (document.fullscreenElement) document.exitFullscreen(); else if (box.requestFullscreen) box.requestFullscreen();
-    });
-    // In full screen there is no bar, so the browser's own controls take over there.
-    document.addEventListener("fullscreenchange", function () { video.controls = document.fullscreenElement === box; });
-    // Keyboard on the player: space or K plays and pauses, the arrows move five seconds.
+    slot.querySelector(".learn-video-full").addEventListener("click", fullscreen);
+    // The speed button steps through the speeds; the ⋯ menu shows them all.
+    function setSpeed(x) {
+      video.playbackRate = x;
+      speedBtn.textContent = x + "×";
+      try { localStorage.setItem("stoa-video-speed", String(x)); } catch (e) {}
+      slot.querySelectorAll("[data-speed]").forEach(function (o) { o.setAttribute("aria-pressed", String(parseFloat(o.getAttribute("data-speed")) === x)); });
+    }
+    speedBtn.addEventListener("click", function () { setSpeed(SPEEDS[(SPEEDS.indexOf(video.playbackRate) + 1) % SPEEDS.length] || 1); });
+    // Keyboard on the player: space or K plays and pauses, the arrows move five seconds, F is full screen.
     slot.addEventListener("keydown", function (e) {
       if (e.target.closest("textarea, form")) return;
-      if (e.key === " " || e.key === "k") { if (e.target === seek || e.target === video || e.key === "k") { e.preventDefault(); toggle(); } }
+      var onButton = e.target.tagName === "BUTTON";
+      if (e.key === "k" || (e.key === " " && !onButton)) { e.preventDefault(); toggle(); wake(); }
+      else if (e.key === "f") { e.preventDefault(); fullscreen(); }
       else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
         if (e.target === seek) return; // the range input moves itself
-        e.preventDefault(); video.currentTime = Math.max(0, video.currentTime + (e.key === "ArrowRight" ? 5 : -5));
+        e.preventDefault(); video.currentTime = Math.max(0, video.currentTime + (e.key === "ArrowRight" ? 5 : -5)); wake();
       }
     });
 
@@ -232,15 +272,14 @@
       if (!open) { form.hidden = true; slot.querySelector(".learn-video-remake").hidden = false; }
     }
     more.addEventListener("click", function () { openMenu(menu.hidden); });
-    document.addEventListener("pointerdown", function (e) { if (!menu.hidden && !e.target.closest(".learn-video-more-wrap")) openMenu(false); });
+    // A click outside the open menu only closes it: it does not also play or pause the video.
+    var closedByClick = false;
+    document.addEventListener("pointerdown", function (e) {
+      if (!menu.hidden && !e.target.closest(".learn-video-menu, .learn-video-more")) { openMenu(false); closedByClick = e.target === video; }
+    });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { openMenu(false); more.focus(); } });
     slot.querySelectorAll("[data-speed]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var x = parseFloat(b.getAttribute("data-speed"));
-        video.playbackRate = x;
-        try { localStorage.setItem("stoa-video-speed", String(x)); } catch (e) {}
-        slot.querySelectorAll("[data-speed]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
-      });
+      b.addEventListener("click", function () { setSpeed(parseFloat(b.getAttribute("data-speed"))); });
     });
     slot.querySelector(".learn-video-remake").addEventListener("click", function () {
       this.hidden = true; form.hidden = false; form.querySelector("textarea").focus();

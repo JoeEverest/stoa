@@ -33,8 +33,10 @@ Report progress with `mcp__learn__set_status` at each step below, and during lon
   `NOTES.md` so every video in the topic sounds the same.
 - Style: the Stoa look, so the video feels like part of the app (see the teach skill's
   `STYLE-GUIDE.md`, "Videos"): background `#ffffff` or `#f7f7f8`, ink `#0f0f11`, secondary ink
-  `#3f4048`, and only the lesson palette for color: charcoal `#264653`, teal `#2a9d8f`, saffron
-  `#e9c46a`, sandy `#f4a261`, sienna `#e76f51` (plus black and white; no other hues), and Geist
+  `#3f4048`, and only the lesson palette for color: teal `#2a9d8f` (the primary colour), saffron
+  `#e9c46a`, sandy `#f4a261`, sienna `#e76f51`, and charcoal `#264653` for ink-weight lines and
+  labels only, never as a fill for shapes, discs or title cards (plus black and white; no other
+  hues), and Geist
   (400/500/600) for all on-screen text. Calm motion, no
   gradients or glows. `references/craft.md` has the design rules; ignore the presets in
   `references/styles.md` unless the learner asks for a different look in `NOTES.md`.

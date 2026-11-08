@@ -39,9 +39,10 @@
   --ink-3: #5a6b72;            /* secondary text, still AA on white, surface-2 and surface-3 */
   --ink-4: #adb9be;            /* decoration only, never text */
 
-  /* Accent: primary actions and the current place in charcoal; teal for focus, selection and links */
-  --accent: var(--charcoal-500);
-  --accent-hover: var(--charcoal-700);
+  /* Accent: teal for primary actions, the current place, focus, selection and links. Teal-600 is the
+     lightest teal that keeps white button text at AA (4.7:1). Charcoal is for ink, not actions. */
+  --accent: var(--teal-600);
+  --accent-hover: var(--teal-700);
   --accent-ink: var(--teal-700);
   --accent-soft: var(--teal-50);
   --accent-line: var(--teal-300);

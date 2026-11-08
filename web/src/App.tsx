@@ -133,25 +133,70 @@ function useRailCollapsed() {
  */
 const RailToggle = React.createContext<React.ReactNode>(null);
 
+/**
+ * The hidden sidebar as a sleeve: resting the pointer on the window's left edge slides it out over
+ * the page, so the learner can open another lesson without bringing the sidebar back for good.
+ * It opens after a short pause (brushing the edge does nothing), stays while the pointer is on it,
+ * and slides away a moment after the pointer leaves or right after a link in it is chosen.
+ */
+function usePeek(collapsed: boolean) {
+  const [peek, setPeek] = useState(false);
+  const rail = useRef<HTMLElement>(null);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const later = (open: boolean, ms: number) => { clearTimeout(timer.current); timer.current = setTimeout(() => setPeek(open), ms); };
+  const close = () => { clearTimeout(timer.current); setPeek(false); };
+  useEffect(() => { if (!collapsed) close(); }, [collapsed]);
+  // Native listeners on the sidebar, not React's: the open topic's lessons are a portal rendered by
+  // the lesson page, so React would call moving onto them "leaving the sidebar".
+  useEffect(() => {
+    const el = rail.current;
+    if (!el || !collapsed) return;
+    const enter = () => clearTimeout(timer.current);
+    const leave = () => later(false, 250);
+    const click = (e: MouseEvent) => { if ((e.target as HTMLElement).closest("a")) close(); };
+    el.addEventListener("pointerenter", enter);
+    el.addEventListener("pointerleave", leave);
+    el.addEventListener("click", click);
+    return () => { el.removeEventListener("pointerenter", enter); el.removeEventListener("pointerleave", leave); el.removeEventListener("click", click); };
+  }, [collapsed]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return {
+    peek: collapsed && peek,
+    rail,
+    // The window's left edge and the "show sidebar" button both open it on hover (mouse or trackpad only).
+    hover: {
+      onPointerEnter: (e: React.PointerEvent) => { if (e.pointerType === "mouse") later(true, 80); },
+      onPointerLeave: () => { if (!peek) clearTimeout(timer.current); },
+    },
+    close,
+  };
+}
+
 function Main() {
   const { topicId, view, page } = useHash();
   const topics = usePoll(api.topics, 4000, []);
   const [theme, setTheme] = useTheme();
   const [collapsed, toggleRail] = useRailCollapsed();
-  const toggle = (
-    <button type="button" className="rail-icon-btn rail-toggle" onClick={toggleRail}
+  const sleeve = usePeek(collapsed);
+  const toggleButton = (hover: boolean) => (
+    <button type="button" className="rail-icon-btn rail-toggle" onClick={() => { sleeve.close(); toggleRail(); }}
       aria-label={collapsed ? "Show sidebar" : "Hide sidebar"} aria-expanded={!collapsed}
-      title={`${collapsed ? "Show" : "Hide"} sidebar (${isMac ? "⌘" : "Ctrl+"}\\)`}>
+      title={`${collapsed ? "Show" : "Hide"} sidebar (${isMac ? "⌘" : "Ctrl+"}\\)`} {...(hover ? sleeve.hover : {})}>
       <I.PanelLeft />
     </button>
   );
+  const toggle = toggleButton(false);
+  // Collapsed, hovering "show sidebar" slides the sidebar out as a sleeve; clicking it keeps it open.
+  const showToggle = toggleButton(true);
   return (
-    <div className={`shell ${topicId ? "in-topic" : ""} ${collapsed ? "rail-collapsed" : ""}`}>
-      <aside className="rail" aria-label="Topics" inert={collapsed || undefined}>
+    <div className={`shell ${topicId ? "in-topic" : ""} ${collapsed ? "rail-collapsed" : ""} ${sleeve.peek ? "rail-peek" : ""}`}>
+      {collapsed && <div className="rail-edge" aria-hidden="true" {...sleeve.hover} />}
+      <aside ref={sleeve.rail} className="rail" aria-label="Topics" inert={(collapsed && !sleeve.peek) || undefined}>
         {/* The sidebar's top row is also the window's title bar in the desktop app (traffic lights, drag). */}
         <div className="rail-head">
           <div className="brand"><I.Mark /><span>Stoa</span></div>
-          {!collapsed && toggle}
+          {/* In the sleeve, the same button keeps the sidebar open. */}
+          {(!collapsed || sleeve.peek) && toggle}
         </div>
         <a className="nav-item new-topic" href="#/" aria-label="New topic" title="New topic" aria-current={topicId || page ? undefined : "page"}><I.Plus /><span className="btn-label">New topic</span></a>
         <div className="rail-label" id="topics-label">Topics</div>
@@ -175,7 +220,7 @@ function Main() {
         </div>
       </aside>
       <main className="main">
-        <RailToggle.Provider value={collapsed ? toggle : null}>
+        <RailToggle.Provider value={collapsed ? showToggle : null}>
           {page === "settings"
             ? <SettingsPage theme={theme} onTheme={setTheme} toggle={collapsed ? toggle : null} />
             : topicId
@@ -255,9 +300,11 @@ function ThemeCycle({ value, onChange }: { value: ThemePref; onChange: (v: Theme
   const names = { light: "Light", dark: "Dark", system: "Match system" };
   const nextPref = order[(order.indexOf(value) + 1) % order.length];
   const Icon = value === "light" ? I.Sun : value === "dark" ? I.Moon : I.Monitor;
+  // The icon cross-fades when the learner changes the theme, not when the app opens.
+  const first = useRef(value);
   return (
-    <button className="rail-icon-btn theme-cycle" onClick={() => onChange(nextPref)}
-      aria-label={`Appearance: ${names[value]}. Switch to ${names[nextPref]}`} title={`Appearance: ${names[value]}`}><Icon /></button>
+    <button className={`rail-icon-btn theme-cycle ${first.current !== value ? "swapped" : ""}`} onClick={() => onChange(nextPref)}
+      aria-label={`Appearance: ${names[value]}. Switch to ${names[nextPref]}`} title={`Appearance: ${names[value]}`}><Icon key={value} /></button>
   );
 }
 
@@ -270,36 +317,101 @@ const EXAMPLES = [
 ];
 
 /** Home page for a returning learner: each recent topic, opened at the lesson to pick up. */
+/** What a topic's "continue" line says: where the learner is, or what Athena is doing. */
+function continueLine(t: Topic) {
+  const count = t.lessonCount ?? 0;
+  return t.phase === "intake"
+    ? (t.busy ? "Athena is replying" : "Finish telling Athena about your goal")
+    : !t.next ? (t.busy ? "Athena is building your first lesson" : "Your first lesson is on its way")
+    : t.next.done ? `All ${count} lessons done · review lesson ${t.next.n}: ${t.next.title}`
+    : `Lesson ${t.next.n}: ${t.next.title}`;
+}
+
+const noMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * The home page for a returning learner leads with the topic they were last in: the next lesson's
+ * video (a muted preview plays while the pointer rests on it), where they are, and one button to
+ * go back in. Other topics follow as quiet rows.
+ */
 function ContinueLearning({ topics }: { topics: Topic[] }) {
+  const [first, ...rest] = topics;
   return (
     <section className="continue" aria-labelledby="continue-label">
       <h2 id="continue-label" className="continue-label">Continue learning</h2>
-      <ul className="continue-list">
-        {topics.slice(0, 5).map((t) => {
-          const count = t.lessonCount ?? 0, done = t.doneCount ?? 0;
-          const line = t.phase === "intake"
-            ? (t.busy ? "Athena is replying" : "Finish telling Athena about your goal")
-            : !t.next ? (t.busy ? "Athena is building your first lesson" : "Your first lesson is on its way")
-            : t.next.done ? `All ${count} lessons done · review lesson ${t.next.n}: ${t.next.title}`
-            : `Lesson ${t.next.n}: ${t.next.title}`;
-          return (
-            <li key={t.id}>
-              <a className="continue-item" href={topicHref(t.id, t.next?.id)} title={`${t.title}: ${line}`}>
-                <span className="continue-icon" aria-hidden="true">
-                  {t.busy ? <I.Spinner size={16} /> : <ProgressRing done={done} total={count} />}
-                </span>
-                <span className="continue-text">
-                  <span className="continue-topic">{t.title}</span>
-                  <span className="continue-lesson">{line}</span>
-                </span>
-                <span className="continue-meta">{count > 0 ? `${done} of ${count} done` : ""}</span>
-                <I.ArrowRight className="continue-go" />
-              </a>
-            </li>
-          );
-        })}
-      </ul>
+      <ContinueCard topic={first} />
+      {rest.length > 0 && (
+        <ul className="continue-list">
+          {rest.slice(0, 4).map((t) => {
+            const count = t.lessonCount ?? 0, done = t.doneCount ?? 0;
+            const line = continueLine(t);
+            return (
+              <li key={t.id}>
+                <a className="continue-item" href={topicHref(t.id, t.next?.id)} title={`${t.title}: ${line}`}>
+                  <span className="continue-icon" aria-hidden="true">
+                    {t.busy ? <I.Spinner size={16} /> : <ProgressRing done={done} total={count} />}
+                  </span>
+                  <span className="continue-text">
+                    <span className="continue-topic">{t.title}</span>
+                    <span className="continue-lesson">{line}</span>
+                  </span>
+                  <span className="continue-meta">{count > 0 ? `${done} of ${count} done` : ""}</span>
+                  <I.ArrowRight className="continue-go" />
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
+  );
+}
+
+function ContinueCard({ topic: t }: { topic: Topic }) {
+  const count = t.lessonCount ?? 0, done = t.doneCount ?? 0;
+  const video = t.next?.video ?? null;
+  const ref = useRef<HTMLVideoElement>(null);
+  const [length, setLength] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  // Preview from a little way in, past the title card, so it shows the lesson itself.
+  const start = () => {
+    const v = ref.current;
+    if (!v || noMotion()) return;
+    if (v.currentTime < 1 && isFinite(v.duration)) v.currentTime = Math.min(v.duration * 0.15, 45);
+    v.play().then(() => setPreviewing(true)).catch(() => {});
+  };
+  const stop = () => { ref.current?.pause(); setPreviewing(false); };
+  const cta = t.phase === "intake" ? "Continue" : !t.next ? "Open topic" : t.next.done ? `Review lesson ${t.next.n}` : `Continue lesson ${t.next.n}`;
+  return (
+    <a className="continue-card" href={topicHref(t.id, t.next?.id)} onPointerEnter={start} onPointerLeave={stop} onFocus={start} onBlur={stop}>
+      <span className={`continue-media ${previewing ? "is-previewing" : ""}`} aria-hidden="true">
+        {video ? (
+          <>
+            <video ref={ref} src={video.file} muted playsInline loop preload="metadata"
+              onLoadedMetadata={(e) => setLength(fmt(e.currentTarget.duration))} />
+            {video.poster && <img src={video.poster} alt="" />}
+            <span className="continue-play"><svg viewBox="0 0 24 24" width="30" height="30"><path d="M8.2 6.9v10.2a1.2 1.2 0 0 0 1.8 1l8.7-5.1a1.2 1.2 0 0 0 0-2L10 5.9a1.2 1.2 0 0 0-1.8 1z" fill="currentColor" /></svg></span>
+            {length && <span className="continue-length">{length}</span>}
+          </>
+        ) : (
+          <span className="continue-media-empty">{t.busy ? <I.Spinner size={20} /> : <I.Mark size={28} />}</span>
+        )}
+      </span>
+      <span className="continue-body">
+        <span className="continue-kicker">{t.title}</span>
+        <span className="continue-title">{t.next ? t.next.title : continueLine(t)}</span>
+        {count > 0 && (
+          <span className="continue-progress">
+            <span className="meter" role="progressbar" aria-label="Lessons done" aria-valuemin={0} aria-valuemax={count} aria-valuenow={done}>
+              <i style={{ width: `${(done / count) * 100}%` }} />
+            </span>
+            <span>{done} of {count} lessons done</span>
+          </span>
+        )}
+        <span className="btn btn-primary continue-cta">{cta}<I.ArrowRight /></span>
+      </span>
+    </a>
   );
 }
 
@@ -369,11 +481,20 @@ function NewTopic({ onCreated, topics }: { onCreated: () => void; topics: Topic[
       {railToggle && <div className="main-toggle">{railToggle}</div>}
       <div className="new-topic-inner">
         {!!topics?.length && <ContinueLearning topics={topics} />}
-        <h1>{topics?.length ? "What do you want to learn next?" : "What do you want to learn?"}</h1>
-        <p className="lead">
-          Say what you want to be able to do. Athena asks a few questions about your goal, then builds
-          your first lesson: reading, a narrated video and exercises.
-        </p>
+        {topics?.length ? (
+          <>
+            <h2 className="new-topic-h2">Learn something new</h2>
+            <p className="lead">Say what you want to be able to do. Athena asks about your goal, then builds the first lesson.</p>
+          </>
+        ) : (
+          <>
+            <h1>What do you want to learn?</h1>
+            <p className="lead">
+              Say what you want to be able to do. Athena asks a few questions about your goal, then builds
+              your first lesson: reading, a narrated video and exercises.
+            </p>
+          </>
+        )}
         <Composer value={text} onChange={setText} onSend={start} disabled={!!busy || !!pending} rows={2} autoFocus={topics?.length === 0}
           placeholder="Describe what you want to be able to do…" sendLabel={busy ?? "Start"} big
           extra={<AttachButton onFiles={attach} disabled={!!busy} className="attach-btn" label="Attach course files" />}
@@ -642,16 +763,6 @@ function Classroom({ state, view, refresh, menu }: {
         </nav>
         {!phone && treeSlot && createPortal(outline, treeSlot)}
         <section className="stage" aria-label={lesson?.title ?? refTitle ?? "Lesson"}>
-          {refFile && (
-            <div className="stage-bar">
-              {backTo && (
-                <a className="back-link" href={topicHref(topic.id, backTo.id)}>
-                  <I.ArrowLeft />Back to lesson {lessons.indexOf(backTo) + 1}
-                </a>
-              )}
-              {refPath?.startsWith("uploads/") && <span className="stage-kind">Your course file</span>}
-            </div>
-          )}
           <div className="stage-frames">
             {src ? shownPages.map((p) => (
               <iframe key={p} src={p} hidden={p !== src} allow="fullscreen" title={p === src ? lesson?.title ?? refTitle ?? "Reference" : "Hidden page"} />

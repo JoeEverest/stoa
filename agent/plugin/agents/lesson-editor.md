@@ -49,11 +49,16 @@ what is taught, or change how the page works.
 - Analogies map cleanly and say where they stop working. Remove an analogy that does not.
 - Feedback lines point to the step that went wrong. Praise names what the learner did.
 - No exclamation marks, no emoji.
+- **Page rhythm** (STYLE-GUIDE.md, "Page design"): cut the `.lede` to two or three sentences,
+  about 50 words, removing what only previews the sections. Split a paragraph longer than four
+  sentences into two `<p>` at the natural break. Report any run of more than three paragraphs
+  with nothing to look at between them, and any inline `<code>` longer than about 30 characters;
+  the teacher fixes those.
 
 ## Do not change
 
 - Anything inside `<script>`, `<style>`, `<svg>`, `<pre>`, `<code>`, `.formula` or `.math`.
-- Element structure, `id`, `class`, `data-*` attributes, `href`, `itemId` values, answers,
+- Element structure (except splitting a long paragraph, above), `id`, `class`, `data-*` attributes, `href`, `itemId` values, answers,
   numbers, units, citations and their links.
 - Facts. If you think a fact is wrong, do not fix it: report it.
 - Feedback strings inside scripts: you may report them, but do not edit scripts.

@@ -164,7 +164,14 @@ api.get("/topics", (c) =>
       busy: Runs.active(t.id).some((r) => r.kind !== "tutor"),
       lessonCount: lessons.length,
       doneCount: lessons.filter((l) => l.completed_at).length,
-      next: at >= 0 ? { id: lessons[at].id, title: lessons[at].title, n: at + 1, done: !!lessons[at].completed_at } : null,
+      next: at >= 0 ? {
+        id: lessons[at].id, title: lessons[at].title, n: at + 1, done: !!lessons[at].completed_at,
+        // For the home page's preview: the lesson's video and poster, when it has one.
+        video: lessons[at].video_file ? {
+          file: `/w/${encodeURIComponent(t.id)}/${lessons[at].video_file}`,
+          poster: lessons[at].video_poster ? `/w/${encodeURIComponent(t.id)}/${lessons[at].video_poster}` : null,
+        } : null,
+      } : null,
     };
   })));
 
