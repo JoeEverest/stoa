@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { marked } from "marked";
 import { api, useArrivals, usePoll, useThread, type Lesson, type Message, type Topic, type TopicState } from "./api";
 import * as I from "./icons";
 import { Setup } from "./Setup";
 import { SettingsButton } from "./Settings";
-import { AttachButton, FileChips, MaterialsList, fileProblem, sizeLabel, uploadChips, useDropFiles, useUploads } from "./Materials";
+import { ACCEPT, AttachButton, FileChips, MaterialsList, fileProblem, sizeLabel, uploadChips, useDropFiles, useUploads } from "./Materials";
 
 // ---- Routing: #/ (new topic), #/t/<topic>, #/t/<topic>/<lesson-id | ref:reference/x.html> ----
 
@@ -67,19 +68,86 @@ export function App() {
   return <Setup state={s} onChange={setup.refresh} onDone={() => setSetupDone(true)} />;
 }
 
+// ---- Topics sidebar: collapsed to icons or expanded ----
+
+const NARROW = "(max-width: 1100px)";
+const RAIL_KEY = "stoa-rail";
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+
+/**
+ * The sidebar shows or hides fully, like the sidebar of a Mac app. The learner's choice wins and is
+ * remembered. Until they choose, it hides in windows 1100px wide or less, so the lesson keeps its width.
+ */
+function useRailCollapsed() {
+  const [pref, setPref] = useState<"collapsed" | "expanded" | null>(() => {
+    try { const v = localStorage.getItem(RAIL_KEY); return v === "collapsed" || v === "expanded" ? v : null; } catch { return null; }
+  });
+  const [narrow, setNarrow] = useState(() => matchMedia(NARROW).matches);
+  useEffect(() => {
+    const media = matchMedia(NARROW);
+    const on = () => setNarrow(media.matches);
+    media.addEventListener("change", on);
+    return () => media.removeEventListener("change", on);
+  }, []);
+  const collapsed = pref ? pref === "collapsed" : narrow;
+  const toggle = () => {
+    const next = collapsed ? "expanded" : "collapsed";
+    setPref(next);
+    try { localStorage.setItem(RAIL_KEY, next); } catch { /* the choice lasts for this session only */ }
+  };
+  // ⌘\ (Ctrl+\ elsewhere) toggles the sidebar, as in most editors.
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.key === "\\" && (isMac ? e.metaKey : e.ctrlKey) && !e.altKey && !e.shiftKey) { e.preventDefault(); toggle(); }
+    };
+    const fromLesson = (e: MessageEvent) => {
+      if (e.origin === location.origin && e.data?.source === "learn" && e.data.type === "toggle-sidebar") toggle();
+    };
+    addEventListener("keydown", on);
+    addEventListener("message", fromLesson);
+    return () => { removeEventListener("keydown", on); removeEventListener("message", fromLesson); };
+  });
+  return [collapsed, toggle] as const;
+}
+
+/**
+ * The "show sidebar" button while the sidebar is hidden. Pages render it INSIDE their header: in the
+ * desktop app the header is a window drag region, and Electron only lets a button take clicks there
+ * when the button is a descendant of that region (a button merely layered over it gets no clicks).
+ */
+const RailToggle = React.createContext<React.ReactNode>(null);
+
 function Main() {
   const { topicId, view } = useHash();
   const topics = usePoll(api.topics, 4000, []);
   const [theme, setTheme] = useTheme();
+  const [collapsed, toggleRail] = useRailCollapsed();
+  const toggle = (
+    <button type="button" className="rail-icon-btn rail-toggle" onClick={toggleRail}
+      aria-label={collapsed ? "Show sidebar" : "Hide sidebar"} aria-expanded={!collapsed}
+      title={`${collapsed ? "Show" : "Hide"} sidebar (${isMac ? "⌘" : "Ctrl+"}\\)`}>
+      <I.PanelLeft />
+    </button>
+  );
   return (
-    <div className={`shell ${topicId ? "in-topic" : ""}`}>
-      <aside className="rail" aria-label="Topics">
-        <div className="brand"><I.Mark /><span>Stoa</span></div>
-        <a className="btn btn-secondary new-topic" href="#/" aria-label="New topic" title="New topic" aria-current={topicId ? undefined : "page"}><I.Plus /><span className="btn-label">New topic</span></a>
+    <div className={`shell ${topicId ? "in-topic" : ""} ${collapsed ? "rail-collapsed" : ""}`}>
+      <aside className="rail" aria-label="Topics" inert={collapsed || undefined}>
+        {/* The sidebar's top row is also the window's title bar in the desktop app (traffic lights, drag). */}
+        <div className="rail-head">
+          <div className="brand"><I.Mark /><span>Stoa</span></div>
+          {!collapsed && toggle}
+        </div>
+        <a className="nav-item new-topic" href="#/" aria-label="New topic" title="New topic" aria-current={topicId ? undefined : "page"}><I.Plus /><span className="btn-label">New topic</span></a>
         <div className="rail-label" id="topics-label">Topics</div>
         <nav className="topic-list" aria-labelledby="topics-label">
           {topics.data?.length === 0 && <p className="rail-empty">Your topics appear here.</p>}
-          {topics.data?.map((t) => <TopicLink key={t.id} topic={t} active={t.id === topicId} />)}
+          {topics.data?.map((t) => (
+            <React.Fragment key={t.id}>
+              <TopicLink topic={t} active={t.id === topicId} />
+              {/* The open topic's lessons, references and files appear here (Classroom renders them). */}
+              {t.id === topicId && <div className="topic-tree" id={TREE_SLOT} />}
+            </React.Fragment>
+          ))}
         </nav>
         <div className="rail-foot">
           <ThemeSwitch value={theme} onChange={setTheme} />
@@ -88,9 +156,11 @@ function Main() {
         </div>
       </aside>
       <main className="main">
-        {topicId
-          ? <TopicView key={topicId} topicId={topicId} view={view} onChange={topics.refresh} />
-          : <NewTopic onCreated={topics.refresh} />}
+        <RailToggle.Provider value={collapsed ? toggle : null}>
+          {topicId
+            ? <TopicView key={topicId} topicId={topicId} view={view} onChange={topics.refresh} />
+            : <NewTopic onCreated={topics.refresh} topics={topics.data ?? null} />}
+        </RailToggle.Provider>
       </main>
     </div>
   );
@@ -101,6 +171,7 @@ function TopicLink({ topic, active }: { topic: Topic; active: boolean }) {
     ? topic.phase === "intake" ? "Athena is replying" : "Athena is working"
     : topic.phase === "intake" ? "Getting started"
     : topic.lessonCount ? `${topic.doneCount ?? 0} of ${topic.lessonCount} lessons done` : "First lesson coming";
+  const count = !topic.busy && topic.phase === "learning" && topic.lessonCount ? `${topic.doneCount ?? 0}/${topic.lessonCount}` : null;
   // In the phone layout the topics are one scrolling row: keep the open topic in view.
   const ref = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
@@ -109,24 +180,53 @@ function TopicLink({ topic, active }: { topic: Topic; active: boolean }) {
   return (
     <a ref={ref} href={topicHref(topic.id)} title={`${topic.title}: ${meta}`} className={`topic ${topic.busy ? "busy" : ""}`} aria-current={active ? "page" : undefined}>
       <span className="topic-icon">{topic.busy ? <I.Spinner size={14} /> : <span className="topic-dot" />}</span>
-      <span className={`topic-initial ${topic.busy ? "busy" : ""}`} aria-hidden="true">
-        {initials(topic.title)}
-      </span>
       <span className="topic-name">{topic.title}</span>
       <span className="topic-meta">{meta}</span>
+      {count && <span className="topic-count">{count}</span>}
     </a>
   );
 }
 
-/** Two letters for the narrow rail: "Projectile motion" -> "PM". */
-const initials = (title: string) =>
-  title.split(/\s+/).filter((w) => /^[\p{L}\p{N}]/u.test(w) && !/^(a|an|the|for|to|of|and|in|on)$/i.test(w))
-    .slice(0, 2).map((w) => w[0].toUpperCase()).join("") || title.slice(0, 1).toUpperCase();
+const TREE_SLOT = "topic-tree-slot";
+const PHONE = "(max-width: 860px)";
 
-/** Phone layout: the way back from a topic to the list of topics. */
-const BackToTopics = () => (
-  <a className="topbar-back" href="#/" aria-label="All topics" title="All topics"><I.ArrowLeft /></a>
-);
+function usePhone() {
+  const [phone, setPhone] = useState(() => matchMedia(PHONE).matches);
+  useEffect(() => {
+    const media = matchMedia(PHONE);
+    const on = () => setPhone(media.matches);
+    media.addEventListener("change", on);
+    return () => media.removeEventListener("change", on);
+  }, []);
+  return phone;
+}
+
+/** The sidebar slot under the open topic, once the topic list has rendered it. */
+function useTreeSlot() {
+  const [slot, setSlot] = useState<HTMLElement | null>(() => document.getElementById(TREE_SLOT));
+  useEffect(() => {
+    const find = () => setSlot((cur) => {
+      const el = document.getElementById(TREE_SLOT);
+      return el === cur ? cur : el;
+    });
+    find();
+    const obs = new MutationObserver(find);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, []);
+  return slot;
+}
+
+/** Start of a page header: the "show sidebar" button (sidebar hidden) and the phone's way back to the topics. */
+function BackToTopics() {
+  const railToggle = React.useContext(RailToggle);
+  return (
+    <>
+      {railToggle && <span className="topbar-toggle">{railToggle}</span>}
+      <a className="topbar-back" href="#/" aria-label="All topics" title="All topics"><I.ArrowLeft /></a>
+    </>
+  );
+}
 
 function ThemeSwitch({ value, onChange }: { value: ThemePref; onChange: (v: ThemePref) => void }) {
   const opts: [ThemePref, string, React.ReactNode][] = [
@@ -162,7 +262,54 @@ const EXAMPLES = [
   "Speak enough Spanish to get around on a two-week trip to Mexico",
 ];
 
-function NewTopic({ onCreated }: { onCreated: () => void }) {
+/** Home page for a returning learner: each recent topic, opened at the lesson to pick up. */
+function ContinueLearning({ topics }: { topics: Topic[] }) {
+  return (
+    <section className="continue" aria-labelledby="continue-label">
+      <h2 id="continue-label" className="continue-label">Continue learning</h2>
+      <ul className="continue-list">
+        {topics.slice(0, 5).map((t) => {
+          const count = t.lessonCount ?? 0, done = t.doneCount ?? 0;
+          const line = t.phase === "intake"
+            ? (t.busy ? "Athena is replying" : "Finish telling Athena about your goal")
+            : !t.next ? (t.busy ? "Athena is building your first lesson" : "Your first lesson is on its way")
+            : t.next.done ? `All ${count} lessons done · review lesson ${t.next.n}: ${t.next.title}`
+            : `Lesson ${t.next.n}: ${t.next.title}`;
+          return (
+            <li key={t.id}>
+              <a className="continue-item" href={topicHref(t.id, t.next?.id)} title={`${t.title}: ${line}`}>
+                <span className="continue-icon" aria-hidden="true">
+                  {t.busy ? <I.Spinner size={16} /> : <ProgressRing done={done} total={count} />}
+                </span>
+                <span className="continue-text">
+                  <span className="continue-topic">{t.title}</span>
+                  <span className="continue-lesson">{line}</span>
+                </span>
+                <span className="continue-meta">{count > 0 ? `${done} of ${count} done` : ""}</span>
+                <I.ArrowRight className="continue-go" />
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/** A small pie that fills with the share of lessons done (a wedge, so it never looks like the working spinner). */
+function ProgressRing({ done, total }: { done: number; total: number }) {
+  const part = total ? done / total : 0, r = 3.5, c = 2 * Math.PI * r;
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18">
+      <circle cx="9" cy="9" r="7.25" fill="none" stroke={part >= 1 ? "var(--accent)" : "var(--ink-4)"} strokeWidth="1.5" />
+      {part > 0 && <circle cx="9" cy="9" r={r} fill="none" stroke="var(--accent)" strokeWidth={2 * r}
+        strokeDasharray={`${c * Math.min(part, 1)} ${c}`} transform="rotate(-90 9 9)" />}
+    </svg>
+  );
+}
+
+function NewTopic({ onCreated, topics }: { onCreated: () => void; topics: Topic[] | null }) {
+  const railToggle = React.useContext(RailToggle);
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
@@ -212,13 +359,15 @@ function NewTopic({ onCreated }: { onCreated: () => void }) {
   };
   return (
     <div className={`new-topic-page ${drop.over ? "drop-over" : ""}`} {...drop.props}>
+      {railToggle && <div className="main-toggle">{railToggle}</div>}
       <div className="new-topic-inner">
-        <h1>What do you want to learn?</h1>
+        {!!topics?.length && <ContinueLearning topics={topics} />}
+        <h1>{topics?.length ? "What do you want to learn next?" : "What do you want to learn?"}</h1>
         <p className="lead">
           Say what you want to be able to do. Athena asks a few questions about your goal, then builds
           your first lesson: reading, a narrated video and exercises.
         </p>
-        <Composer value={text} onChange={setText} onSend={start} disabled={!!busy || !!pending} rows={2} autoFocus
+        <Composer value={text} onChange={setText} onSend={start} disabled={!!busy || !!pending} rows={2} autoFocus={topics?.length === 0}
           placeholder="Describe what you want to be able to do…" sendLabel={busy ?? "Start"} big
           extra={<AttachButton onFiles={attach} disabled={!!busy} className="attach-btn" label="Attach course files" />}
           top={<FileChips items={files.map((f, i) => ({
@@ -233,12 +382,12 @@ function NewTopic({ onCreated }: { onCreated: () => void }) {
             <button className="btn btn-secondary" onClick={() => begin(pending.id).catch((e) => setError(e instanceof Error ? e.message : String(e)))}>Continue without them</button>
           </div>
         )}
-        <div className="examples">
+        {topics?.length === 0 && <div className="examples">
           <span className="examples-label">Or start from an example</span>
           {EXAMPLES.map((e) => (
             <button key={e} className="example" onClick={() => setText(e)}>{e}</button>
           ))}
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -315,6 +464,8 @@ function Classroom({ state, view, refresh, menu }: {
   // The tutor starts open beside the lesson; on a phone it is a sheet the learner opens.
   const [tutorOpen, setTutorOpen] = useState(() => !matchMedia("(max-width: 860px)").matches);
   const [outlineOpen, setOutlineOpen] = useState(false);
+  const phone = usePhone();
+  const treeSlot = useTreeSlot();
   const [toast, setToast] = useState<string | null>(null);
 
   // Default view: the oldest lesson that is not finished, else the newest lesson.
@@ -344,10 +495,11 @@ function Classroom({ state, view, refresh, menu }: {
   const shownPages = src && !pages.includes(src) ? [...pages, src] : pages;
   const doneCount = lessons.filter((l) => l.completed_at).length;
   const buildingNext = state.buildingNew;
-  const makingVideo = building && !buildingNext && lessons.at(-1)?.video_status === "planned";
+  // Any lesson's video: the newest one after a build, or an older one the learner asked Athena to remake.
+  const makingVideo = building && !buildingNext && lessons.some((l) => l.video_status === "planned");
   // A lesson that Athena is building counts in every total, so the bar, the status and the switcher agree.
   const total = lessons.length + (buildingNext ? 1 : 0);
-  const workingLabel = buildingNext ? `Building lesson ${lessons.length + 1}` : makingVideo ? "Making the video" : "Finishing up";
+  const workingLabel = buildingNext ? `Athena is building lesson ${lessons.length + 1}` : makingVideo ? "Athena is making the video" : "Athena is finishing up";
   const arrivals = useArrivals(lessons.map((l) => l.id), lessons.filter((l) => l.completed_at).map((l) => l.id));
 
   // Lesson pages report submit/complete through postMessage; refresh state when they do.
@@ -377,23 +529,70 @@ function Classroom({ state, view, refresh, menu }: {
     refresh();
   };
 
+  const filesAdded = (n: number, steered: boolean) => {
+    const what = n === 1 ? "File" : `${n} files`, it = n === 1 ? "it" : "them";
+    flash(steered
+      ? `${what} added. Athena got ${it} and uses ${it} in the work she is doing now.`
+      : `${what} added. Athena reads ${it} when she builds the next lesson.`);
+  };
+  // "Add course files…" in the ⋯ menu works with the sidebar hidden too.
+  const filePicker = useRef<HTMLInputElement>(null);
+  const addFromPicker = async (files: File[]) => {
+    const r = await materials.add(files);
+    if (r.problems.length) flash(r.problems.join(" "));
+    else if (r.added) filesAdded(r.added, r.steered);
+  };
+
+  // Lessons, references and the learner's files: in the sidebar under the open topic on a computer,
+  // in the lesson picker on a phone. One copy, so upload state and drop targets are never doubled.
+  const outline = (
+    <div className="outline-body">
+      <ol className="lesson-list" aria-label="Lessons">
+        {lessons.map((l, i) => (
+          <LessonItem key={l.id} lesson={l} n={i + 1} active={l.id === current} topicId={topic.id} onPick={() => setOutlineOpen(false)}
+            fresh={arrivals.fresh.has(l.id)} justDone={arrivals.justDone.has(l.id)} />
+        ))}
+        {buildingNext && (
+          <li className="li building" aria-live="polite" title={topic.status_message ?? "Athena is writing it"}>
+            <span className="num"><I.Spinner size={12} /></span>
+            <span className="li-name">{lessons.length ? `Lesson ${lessons.length + 1}` : "Your first lesson"}</span>
+            <span className="li-meta">Athena is writing it</span>
+          </li>
+        )}
+      </ol>
+      {!!refs.data?.length && (
+        <div className="refs">
+          <div className="col-head"><span>Reference</span></div>
+          {refs.data.map((r) => (
+            <a key={r.file} className="ref" aria-current={refPath === r.file ? "page" : undefined} title={r.title}
+              href={topicHref(topic.id, `ref:${r.file}`)} onClick={() => setOutlineOpen(false)}><I.Doc /><span className="ref-name">{r.title}</span></a>
+          ))}
+        </div>
+      )}
+      <MaterialsList u={materials} current={refPath} working={building} onPick={() => setOutlineOpen(false)}
+        hrefFor={(file) => topicHref(topic.id, `ref:${file}`)} onAdded={filesAdded} />
+    </div>
+  );
+  // Breadcrumb: Topic / the page open now.
+  const crumb = lesson ? `Lesson ${lessons.indexOf(lesson) + 1}: ${lesson.title}` : refTitle ?? (lessons.length ? null : "Your first lesson");
+
   return (
     <div className="classroom">
       <header className="topbar">
         <BackToTopics />
         <div className="topbar-title">
           <h1>{topic.title}</h1>
+          {crumb && <><span className="crumb-sep" aria-hidden="true">/</span><span className="crumb" title={crumb}>{crumb}</span></>}
           <div className="status">
             {lessons.length > 0 && <ProgressBar lessons={lessons} building={buildingNext} />}
             <span className="status-text" aria-live="polite">
               {lessons.length > 0 && <span>{doneCount} of {total} done</span>}
-              {/* With no lesson yet, the page below shows Athena's status; do not repeat it here. */}
-              {building && lessons.length > 0
-                ? <span className="status-athena">Athena: {topic.status_message ?? "working on the next lesson"}</span>
-                : building ? null
+              {building
+                ? <span className="status-working"><I.Spinner size={12} />{workingLabel}</span>
                 : lastError ? <span className="error-text">Athena stopped: {lastError}</span>
                 : !lessons.length && topic.status_message ? <span>{topic.status_message}</span> : null}
             </span>
+            {building && <StopButton onStop={() => api.stop(topic.id).then(refresh)} />}
           </div>
         </div>
         <div className="topbar-actions">
@@ -401,18 +600,21 @@ function Classroom({ state, view, refresh, menu }: {
             aria-pressed={tutorOpen} aria-label="Tutor" title={tutorOpen ? "Hide the tutor" : "Ask the tutor about this lesson"}>
             <I.Chat /><span className="btn-label">Tutor</span>
           </button>}
-          {building
-            ? <WaitingChip label={workingLabel} onStop={() => api.stop(topic.id).then(refresh)} />
-            // Finishing a lesson builds the next one, so mid-lesson the header has no build button;
-            // it is in the menu. When every lesson is done, building the next one is the main action.
-            : allDone && <button className="btn btn-primary build-btn" onClick={next}
+          {/* Finishing a lesson builds the next one, so mid-lesson the header has no build button;
+              it is in the menu. When every lesson is done, building the next one is the main action. */}
+          {!building && allDone && <button className="btn btn-primary build-btn" onClick={next}
                 title={`Ask Athena to build lesson ${lessons.length + 1} from your answers so far`}>
                 <span>Build lesson {lessons.length + 1}</span><I.ArrowRight />
               </button>}
           {/* On a phone the build and stop actions live in this menu, to keep the header to one row. */}
-          {menu(building
-            ? [{ label: "Stop Athena", icon: <I.Stop />, onClick: () => { api.stop(topic.id).then(refresh); }, className: "phone-only" }]
-            : [{ label: `Build lesson ${lessons.length + 1} now`, icon: <I.Plus />, onClick: next, className: allDone ? "phone-only" : "" }])}
+          {menu([
+            { label: "Add course files…", icon: <I.Paperclip />, onClick: () => filePicker.current?.click() },
+            ...(building
+              ? [{ label: "Stop Athena", icon: <I.Stop />, onClick: () => { api.stop(topic.id).then(refresh); }, className: "phone-only" }]
+              : [{ label: `Build lesson ${lessons.length + 1} now`, icon: <I.Plus />, onClick: next, className: allDone ? "phone-only" : "" }]),
+          ])}
+          <input ref={filePicker} type="file" multiple accept={ACCEPT} hidden
+            onChange={(e) => { const f = [...(e.target.files ?? [])]; e.target.value = ""; if (f.length) addFromPicker(f); }} />
         </div>
       </header>
       <div className={`workspace ${tutorLesson && tutorOpen ? "with-tutor" : ""}`}>
@@ -429,38 +631,9 @@ function Classroom({ state, view, refresh, menu }: {
             </span>
             <I.Chevron className="outline-chevron" />
           </button>
-          <div className="col-head"><span>Lessons</span></div>
-          <ol className="lesson-list">
-            {lessons.map((l, i) => (
-              <LessonItem key={l.id} lesson={l} n={i + 1} active={l.id === current} topicId={topic.id} onPick={() => setOutlineOpen(false)}
-                fresh={arrivals.fresh.has(l.id)} justDone={arrivals.justDone.has(l.id)} />
-            ))}
-            {buildingNext && (
-              <li className="li building" aria-live="polite">
-                <span className="num"><I.Spinner size={14} /></span>
-                <span className="li-name">{lessons.length ? `Lesson ${lessons.length + 1}` : "Your first lesson"}</span>
-                <span className="li-meta">Athena is writing it</span>
-              </li>
-            )}
-          </ol>
-          {!!refs.data?.length && (
-            <div className="refs">
-              <div className="col-head"><span>Reference</span></div>
-              {refs.data.map((r) => (
-                <a key={r.file} className="ref" aria-current={refPath === r.file ? "page" : undefined}
-                  href={topicHref(topic.id, `ref:${r.file}`)} onClick={() => setOutlineOpen(false)}><I.Doc />{r.title}</a>
-              ))}
-            </div>
-          )}
-          <MaterialsList u={materials} current={refPath} working={building} onPick={() => setOutlineOpen(false)}
-            hrefFor={(file) => topicHref(topic.id, `ref:${file}`)}
-            onAdded={(n, steered) => {
-              const what = n === 1 ? "File" : `${n} files`, it = n === 1 ? "it" : "them";
-              flash(steered
-                ? `${what} added. Athena got ${it} and uses ${it} in the work she is doing now.`
-                : `${what} added. Athena reads ${it} when she builds the next lesson.`);
-            }} />
+          {phone ? outline : null}
         </nav>
+        {!phone && treeSlot && createPortal(outline, treeSlot)}
         <section className="stage" aria-label={lesson?.title ?? refTitle ?? "Lesson"}>
           {refFile && (
             <div className="stage-bar">
@@ -474,7 +647,7 @@ function Classroom({ state, view, refresh, menu }: {
           )}
           <div className="stage-frames">
             {src ? shownPages.map((p) => (
-              <iframe key={p} src={p} hidden={p !== src} title={p === src ? lesson?.title ?? refTitle ?? "Reference" : "Hidden page"} />
+              <iframe key={p} src={p} hidden={p !== src} allow="fullscreen" title={p === src ? lesson?.title ?? refTitle ?? "Reference" : "Hidden page"} />
             ))
               : <BuildingPlaceholder topicId={topic.id} message={topic.status_message} since={state.workingSince} />}
           </div>
@@ -511,14 +684,15 @@ function LessonItem({ lesson, n, active, topicId, fresh, justDone, onPick }: {
   const done = !!lesson.completed_at;
   return (
     <li>
-      <a className={`li ${done ? "done" : ""} ${fresh ? "fresh" : ""} ${justDone ? "just-done" : ""}`} aria-current={active ? "page" : undefined} href={topicHref(topicId, lesson.id)} onClick={onPick}>
+      <a className={`li ${done ? "done" : ""} ${fresh ? "fresh" : ""} ${justDone ? "just-done" : ""}`} aria-current={active ? "page" : undefined}
+        href={topicHref(topicId, lesson.id)} onClick={onPick} title={`Lesson ${n}: ${lesson.title}`}>
         <span className="num">{done ? <I.Check size={12} /> : n}</span>
         <span className="li-name">{lesson.title}</span>
         <span className="li-meta">
           {done ? r.graded > 0 && <span>{r.right} of {r.graded} correct</span>
             : r.n > 0 && <span>{lesson.exercises ? `${Math.min(r.n, lesson.exercises)} of ${lesson.exercises} answered` : `${r.n} answered`}</span>}
           {lesson.video_status === "ready" && <span title="The narrated video is ready"><I.Video size={14} />Video</span>}
-          {lesson.video_status === "planned" && <span className="li-pending"><I.Spinner size={12} />Video in progress</span>}
+          {lesson.video_status === "planned" && <span className="li-pending" title="Athena is making the video"><I.Spinner size={12} /><span className="li-pending-text">Video in progress</span></span>}
           {lesson.video_status === "failed" && <span>No video</span>}
         </span>
       </a>
@@ -545,18 +719,15 @@ function BuildingPlaceholder({ topicId, message, since }: { topicId: string; mes
   const notes = thread.messages.filter((m) => m.role !== "user").slice(-5);
   return (
     <div className="building-page">
-      <div className="building-head">
-        <I.Spinner size={18} />
-        <div>
-          <h2>Athena is building your first lesson</h2>
-          <p className="status-cell" aria-live="polite">{message ?? "Researching sources"}</p>
-          {elapsed && <p className="elapsed">{elapsed}</p>}
-        </div>
-      </div>
+      <p className="building-step" aria-live="polite">
+        <I.Spinner size={14} /><span>{message ?? "Researching sources"}</span>
+        {elapsed && <span className="elapsed">{elapsed}</span>}
+      </p>
+      <h2>Your first lesson is on its way</h2>
       <p className="muted">
         {slow
-          ? "This is taking longer than usual. Athena is still working. You can keep waiting, or press Stop building and then choose Build lesson 1 now in the ⋯ menu."
-          : "The reading part appears here first, usually within a few minutes. The narrated video follows when it has rendered."}
+          ? "This is taking longer than usual. Athena is still working. You can keep waiting, or press Stop at the top and then choose Build lesson 1 now in the ⋯ menu."
+          : "The reading appears here first, usually within a few minutes. The narrated video follows when it has rendered."}
       </p>
       <div className="skeleton" aria-hidden="true">
         <i style={{ width: "62%", height: 28 }} /><i style={{ width: "92%" }} /><i style={{ width: "84%" }} />
@@ -572,8 +743,8 @@ function BuildingPlaceholder({ topicId, message, since }: { topicId: string; mes
   );
 }
 
-/** The header's "Athena is working" state, with a Stop that asks once before it stops the run. */
-function WaitingChip({ label, onStop }: { label: string; onStop: () => Promise<unknown> }) {
+/** Stops Athena's run. It asks once ("Stop now?") so a stray click does not throw work away. */
+function StopButton({ onStop }: { onStop: () => Promise<unknown> }) {
   const [armed, setArmed] = useState(false);
   useEffect(() => {
     if (!armed) return;
@@ -581,14 +752,11 @@ function WaitingChip({ label, onStop }: { label: string; onStop: () => Promise<u
     return () => clearTimeout(t);
   }, [armed]);
   return (
-    <>
-      <span className="waiting-chip" role="status"><I.Spinner size={14} />{label}</span>
-      <button type="button" className={`btn btn-secondary waiting-stop ${armed ? "armed" : ""}`}
-        onClick={() => (armed ? onStop().finally(() => setArmed(false)) : setArmed(true))}
-        title={armed ? "Click again to stop Athena" : "Stop Athena's work. Your lessons and chats are kept."}>
-        <I.Stop />{armed ? "Stop now?" : "Stop building"}
-      </button>
-    </>
+    <button type="button" className={`stop-btn ${armed ? "armed" : ""}`}
+      onClick={() => (armed ? onStop().finally(() => setArmed(false)) : setArmed(true))}
+      title={armed ? "Click again to stop Athena" : "Stop Athena's work. Your lessons and chats are kept."}>
+      {armed ? "Stop now?" : "Stop"}
+    </button>
   );
 }
 

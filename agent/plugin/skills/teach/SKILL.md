@@ -46,6 +46,7 @@ You have an MCP server named `learn`. These calls are how the app knows what you
 |---|---|
 | `mcp__learn__end_intake` | Once, when the mission is clear. The app closes the intake chat. |
 | `mcp__learn__set_status` | Often during a build: one short plain line ("Researching sources", "Writing lesson 2", "Rendering video, chapter 3 of 5"). The learner sees it. |
+| `mcp__learn__preview_page` | See a lesson or reference page as the learner does, light and dark (and phone), with a contrast and palette check. Before every publish and after visual changes. |
 | `mcp__learn__publish_lesson` | When a lesson file is complete. Pass `video: "planned"` if a video will follow. |
 | `mcp__learn__publish_video` | When the rendered video and poster are in `lessons/media/`. |
 | `mcp__learn__video_failed` | If you cannot finish a planned video. Give the reason. |
@@ -112,10 +113,16 @@ Each build run produces the next lesson. Steps:
    sources for what they do not cover. Update `RESOURCES.md`.
 5. **Write the text lesson** and any reference documents, following [WRITING.md](./WRITING.md).
    Then run the editing pass: give the file to the `learn:lesson-editor` subagent with the target
-   grade, read its report, and run `scripts/readability.mjs`. Call `publish_lesson` as soon as
-   the edited lesson works, so the learner can start reading while the video is made.
-6. **Make the video** (if planned) with the `lesson-video` skill. Call `publish_video`, or
-   `video_failed` with the reason.
+   grade, read its report, and run `scripts/readability.mjs`. Then **look at it**: call
+   `preview_page` (light and dark; add the phone width for wide tables, figures and simulations),
+   look at every screenshot, and fix each finding and anything that looks wrong (a dark box in the
+   light theme, unreadable text, a figure that does not fit). Preview again until it is clean.
+   Call `publish_lesson` as soon as the lesson works and looks right, so the learner can start
+   reading while the video is made. Preview reference pages the same way.
+6. **Make the video** (if planned) with the `lesson-video` skill. Do not start it until you have
+   called `publish_lesson`: the learner reads the text while the video renders, and a lesson
+   that is not published is invisible to them. Then call `publish_video`, or `video_failed` with
+   the reason.
 7. **Hand off.** Update the working notes in `NOTES.md`: what you built, which lesson notes you
    handled, what evidence is still missing, what you plan next.
 
@@ -133,8 +140,8 @@ A lesson is the main thing you produce. Each lesson is one self-contained HTML f
 - **Native to the app.** The app injects its lesson kit into every page. Follow
   [STYLE-GUIDE.md](./STYLE-GUIDE.md) and start from [LESSON-EXAMPLE.html](./LESSON-EXAMPLE.html).
   Do not set your own fonts or page background; use the kit's classes and color tokens, so the
-  page matches the app and follows the learner's light or dark choice. Give each topic its own
-  colors in `library/topic.css` (the guide's "topic look") at the first lesson and reuse them.
+  page matches the app and follows the learner's light or dark choice. Use only the lesson
+  palette (the guide's "The lesson palette": five colors plus black and white), through the tokens.
   Other topic-specific pieces (a simulation's layout, a reusable diagram) also live in `library/`.
 - **Cited.** Back claims with links to the sources in `RESOURCES.md`. Cite the learner's own
   files by exact place and link to them (`../uploads/x.pdf#page=12`).
@@ -241,7 +248,9 @@ concept needs: two minutes or twenty. Follow the learner's preferences in `NOTES
 length, style). Use the `lesson-video` skill for the full process.
 
 The text lesson and the video teach the same thing in two ways: the video shows, the lesson
-explains, cites, and makes the learner practise.
+explains, cites, and makes the learner practise. The video is a walkthrough, not a summary: it
+hands the learner one problem, works it with them out loud, lets the key idea come out of the
+example, and ends with a question they answer (`lesson-video`, "Script: teach, do not recite").
 
 ## Zone of proximal development
 

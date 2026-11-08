@@ -1,0 +1,98 @@
+/*
+ * The lesson palette. Lessons and reference pages use only these colors, plus black and white
+ * (and grays mixed from them):
+ *
+ *   #264653 charcoal   #2a9d8f teal   #e9c46a saffron   #f4a261 sandy   #e76f51 sienna
+ *
+ * Served at /stoa/palette.css and linked by the server at the END of every workspace page's <head>,
+ * after the page's own styles and its library/topic.css, so the color tokens always resolve to this
+ * palette. The selectors are stronger than a topic.css can write (html:root...), for the same reason.
+ * Tints (soft backgrounds, lines) are these colors mixed with white or with the dark background.
+ */
+html:root:not([data-theme="dark"]) {
+  --charcoal: #264653; --teal: #2a9d8f; --saffron: #e9c46a; --sandy: #f4a261; --sienna: #e76f51;
+
+  /* Actions, links, the current selection: charcoal (10:1 on white). Focus: teal. */
+  --accent: #264653;
+  --accent-hover: color-mix(in srgb, #264653 82%, #000);
+  --accent-ink: #264653;
+  --accent-soft: color-mix(in srgb, #2a9d8f 12%, #fff);
+  --accent-line: color-mix(in srgb, #2a9d8f 45%, #fff);
+  --on-accent: #fff;
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px #2a9d8f;
+  --field-ring: 0 0 0 3px color-mix(in srgb, #2a9d8f 28%, transparent);
+
+  /* Right, wrong, hint. Text on these tints stays charcoal or black; the color marks, it does not spell. */
+  --ok: #2a9d8f;
+  --ok-soft: color-mix(in srgb, #2a9d8f 12%, #fff);
+  --ok-line: color-mix(in srgb, #2a9d8f 50%, #fff);
+  --ok-ink: #264653;
+  --bad: #e76f51;
+  --bad-soft: color-mix(in srgb, #e76f51 12%, #fff);
+  --bad-line: color-mix(in srgb, #e76f51 50%, #fff);
+  --bad-ink: #264653;
+  --warn: #e9c46a;
+  --warn-soft: color-mix(in srgb, #e9c46a 28%, #fff);
+  --warn-ink: #264653;
+
+  /* Topic accents (callouts, step numbers, terms) and extra topic colors for figures. */
+  --topic: #2a9d8f;
+  --topic-soft: color-mix(in srgb, #2a9d8f 12%, #fff);
+  --topic-ink: #264653;
+  --topic-2: #f4a261; --topic-2-soft: color-mix(in srgb, #f4a261 18%, #fff);
+  --topic-3: #e76f51; --topic-3-soft: color-mix(in srgb, #e76f51 14%, #fff);
+  --topic-4: #e9c46a; --topic-4-soft: color-mix(in srgb, #e9c46a 28%, #fff);
+  --topic-5: #264653; --topic-5-soft: color-mix(in srgb, #264653 10%, #fff);
+
+  /* Diagram series: the first four are the same in both themes. */
+  --viz-1: #2a9d8f; --viz-2: #e76f51; --viz-3: #e9c46a; --viz-4: #f4a261; --viz-5: #264653;
+
+  /* Anatomy figures */
+  --anatomy-red: #e76f51; --anatomy-green: #2a9d8f; --anatomy-blue: #264653;
+}
+
+html:root[data-theme="dark"] {
+  --charcoal: #264653; --teal: #2a9d8f; --saffron: #e9c46a; --sandy: #f4a261; --sienna: #e76f51;
+
+  /* Charcoal disappears on a dark page, so actions and links are teal (5:1 on the dark background). */
+  --accent: #2a9d8f;
+  --accent-hover: color-mix(in srgb, #2a9d8f 85%, #fff);
+  --accent-ink: #2a9d8f;
+  --accent-soft: color-mix(in srgb, #2a9d8f 16%, var(--bg));
+  --accent-line: color-mix(in srgb, #2a9d8f 45%, var(--bg));
+  --on-accent: #000;
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px #2a9d8f;
+  --field-ring: 0 0 0 3px color-mix(in srgb, #2a9d8f 35%, transparent);
+
+  --ok: #2a9d8f;
+  --ok-soft: color-mix(in srgb, #2a9d8f 16%, var(--bg));
+  --ok-line: color-mix(in srgb, #2a9d8f 50%, var(--bg));
+  --ok-ink: #fff;
+  --bad: #e76f51;
+  --bad-soft: color-mix(in srgb, #e76f51 16%, var(--bg));
+  --bad-line: color-mix(in srgb, #e76f51 50%, var(--bg));
+  --bad-ink: #fff;
+  --warn: #e9c46a;
+  --warn-soft: color-mix(in srgb, #e9c46a 14%, var(--bg));
+  --warn-ink: #e9c46a;
+
+  --topic: #2a9d8f;
+  --topic-soft: color-mix(in srgb, #2a9d8f 16%, var(--bg));
+  --topic-ink: #2a9d8f;
+  --topic-2: #f4a261; --topic-2-soft: color-mix(in srgb, #f4a261 16%, var(--bg));
+  --topic-3: #e76f51; --topic-3-soft: color-mix(in srgb, #e76f51 16%, var(--bg));
+  --topic-4: #e9c46a; --topic-4-soft: color-mix(in srgb, #e9c46a 14%, var(--bg));
+  --topic-5: #fff; --topic-5-soft: color-mix(in srgb, #fff 10%, var(--bg));
+
+  --viz-1: #2a9d8f; --viz-2: #e76f51; --viz-3: #e9c46a; --viz-4: #f4a261; --viz-5: #fff;
+
+  --anatomy-red: #e76f51; --anatomy-green: #2a9d8f; --anatomy-blue: #e9c46a;
+}
+
+/* Feedback text is ink, not the state color: teal and sienna on white are below 4.5:1 for text.
+   The ✓ / ✗ icon carries the color. Hint and warning callouts keep ink text on the saffron tint. */
+html:root .feedback.ok, html:root .feedback.bad { color: var(--ink-1); }
+html:root .feedback.ok::before { background: var(--ok); }
+html:root .feedback.bad::before { background: var(--bad); }
+html:root .callout.warn strong:first-child { color: var(--ink-1); }
+html:root .callout strong:first-child { color: var(--topic-ink); }

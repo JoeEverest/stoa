@@ -83,7 +83,7 @@ export function useUploads(topicId: string) {
       setQueue((q) => q.slice(1));
       list.refresh();
     }
-    return { added, steered };
+    return { added, steered, problems };
   };
   const remove = async (u: Upload) => {
     await api.deleteUpload(topicId, u.id);

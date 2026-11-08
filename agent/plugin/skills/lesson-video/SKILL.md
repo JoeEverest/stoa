@@ -33,11 +33,15 @@ Report progress with `mcp__learn__set_status` at each step below, and during lon
   `NOTES.md` so every video in the topic sounds the same.
 - Style: the Stoa look, so the video feels like part of the app (see the teach skill's
   `STYLE-GUIDE.md`, "Videos"): background `#ffffff` or `#f7f7f8`, ink `#0f0f11`, secondary ink
-  `#3f4048`, the topic colors from `library/topic.css` as accents (else `#2563eb`), diagram series `#2563eb #e5484d
-  #12a594 #d97706 #8e4ec6`, and Geist (400/500/600) for all on-screen text. Calm motion, no
+  `#3f4048`, and only the lesson palette for color: charcoal `#264653`, teal `#2a9d8f`, saffron
+  `#e9c46a`, sandy `#f4a261`, sienna `#e76f51` (plus black and white; no other hues), and Geist
+  (400/500/600) for all on-screen text. Calm motion, no
   gradients or glows. `references/craft.md` has the design rules; ignore the presets in
   `references/styles.md` unless the learner asks for a different look in `NOTES.md`.
 - Follow any video preferences in `NOTES.md` (length, pace, style, script review steps).
+
+Before anything else: the text lesson must already be published (`mcp__learn__publish_lesson`,
+`video: "planned"`). Check with `mcp__learn__list_lessons`; if it is missing, publish it now.
 
 ## 0. Preflight (once per machine)
 
@@ -71,26 +75,71 @@ cp -R fonts sfx package.json hyperframes.json meta.json CLAUDE.md AGENTS.md ../.
 Self-host every font with a local `@font-face`. Make any extra sound effects with ffmpeg
 (`sine`/`anoisesrc` + `afade`) and add them to the starter's `sfx/` too.
 
-## 2. Script
+## 2. Script: teach, do not recite
 
-Write `script.txt`: plain spoken English, one paragraph per voice line, each line one beat of
-the explanation (one to four sentences). Write for the ear:
+The video is a teacher at a whiteboard working **one** problem *with* the learner. It is not a
+summary of the lesson read aloud. A script that is a list of true statements ("The inner loop
+tries each number. A hash map answers that in one step. The cost is memory.") is a failed
+script, even when every sentence is correct.
 
+Write `script.txt`: plain spoken English, one paragraph per voice line, each line one beat. Plan
+the visual for every line at the same time in `storyboard.md` (what is on screen, what moves).
+
+### The shape every lesson video follows
+
+1. **Hand over the problem.** Show the concrete problem and its input, then ask the learner to
+   try it: "Pause the video and find two numbers that add up to seven." Show a "Pause and try"
+   cue and leave two or three seconds of quiet. This is not a hook: the line teaches the problem.
+2. **Do the obvious approach out loud, for real.** Narrate the first few actual steps slowly,
+   with the counter on screen, so the learner *sees* why it is slow. Then speed the animation up
+   and say what it is doing. Never only state the cost ("so it does 15 checks").
+3. **Find the insight with the learner.** Stop on the step that repeats work. Ask the question an
+   expert asks ("What is the inner loop really looking for?"), give a beat of quiet, then answer
+   from what the learner just watched. The insight must come out of the example, not arrive as
+   a fact.
+4. **Bring in the new tool only when it is needed,** and say in one or two sentences what it is
+   and why it fits, at this learner's level (what a hash map stores; why finding a key is fast).
+5. **Walk the new method step by step, and say *why* at each step**, not only what. Where the
+   learner must track state (a pointer, a table, a stack), go slowly: a beat of quiet and a
+   visible change per step. If steps repeat, do two slowly, then say what will happen and let
+   the animation run. "1 needs 6. 7 needs 0. 5 needs 2." is a list, not a walkthrough.
+6. **Show the trap.** One wrong move learners make (from `learning-records/`, `lesson-notes/`, or
+   the common mistake for this idea), on a concrete input on screen, and why it fails.
+7. **One idea per video.** A second problem or an extension gets its own chapter with this same
+   shape (section 6), or it stays in the text lesson. Never squeeze it into the last 20 seconds.
+8. **End with a check, not an announcement.** Say the idea in one sentence. Then ask one question
+   the learner answers in their head ("Target ten, array three, five, seven: what is in the map
+   when you find the pair?"), pause, and answer it. Then one line on what the lesson asks next.
+
+### Writing for the ear
+
+- Talk to one learner: "you", "let's", real questions. Give reasons: "because", "so", "that
+  means". A line that states a fact with no reason and no link to the screen is a reciting line;
+  give it its reason or cut it.
 - Write the narration in ASD-STE100 Simplified Technical English, as the teach skill's
-  `WRITING.md` describes ("Language"). Technical terms may break the rules.
-- Follow the teach skill's `WRITING.md`: the first line teaches something (no hook, no "get
-  ready for"), a specific example before the rule, things at their real size, no hype.
-- Short sentences. One idea per line. Use the glossary's terms exactly, and the same names as the
-  text lesson. Never a synonym.
+  `WRITING.md` describes ("Language"): short sentences, simple words. Technical terms may break
+  the rules. Short sentences are for clarity, not a reason to drop the reasoning.
+- Follow `WRITING.md`: the first line teaches something (handing over the problem counts; "get
+  ready for" does not), a specific example before the rule, things at their real size, no hype.
+- Every name must be clear when *heard*. Read each line aloud: "seen" sounds like "scene", so
+  say "the map of numbers we have seen". Use the glossary's terms and the text lesson's names.
 - Spell out what TTS reads badly: "nine point eight metres per second", not "9.8 m/s";
   "v cos theta", not "v·cosθ". Keep symbols on screen, words in the voice.
-- Point at the picture: "watch the shadow on the floor", "the blue arrow is the sideways part".
-- End with what comes next, tied to the mission.
+- Point at the picture: "watch the pointer move to the nine", "the green row is the match".
+- Pace: about 130 to 150 spoken words a minute, plus the quiet beats. Length follows the
+  teaching: a walkthrough with pauses is often three to six minutes. That is fine.
 
-Plan the visuals per line at the same time (a few words in a comment or a `storyboard.md`).
 Every claim must be correct; animations of physical or technical processes must be accurate
 (real proportions, correct directions, correct timing relations). Citations go in the lesson,
 not in the video.
+
+### Review before any voice is made
+
+Give `script.txt` and `storyboard.md` to the `learn:video-script-editor` subagent with the lesson
+file path. Fix every structural problem it reports (it edits wording itself, but the teaching
+shape is yours). Do not start the voiceover until it passes. After the voiceover, read the
+whisper transcript once *as the learner*: if any stretch is a list of facts, rewrite those
+lines and regenerate only them.
 
 ## 3. Voiceover
 

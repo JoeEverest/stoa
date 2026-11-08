@@ -204,10 +204,17 @@ async function createWindow() {
       url: serverUrl, name: "stoa_token", value: token, httpOnly: true, sameSite: "strict",
     });
   }
+  const mac = process.platform === "darwin";
   win = new BrowserWindow({
     width: 1360, height: 880, minWidth: 900, minHeight: 600, show: false,
     title: "Stoa",
-    backgroundColor: nativeTheme.shouldUseDarkColors ? "#111113" : "#ffffff",
+    // Same colors as the app's sidebar, so nothing flashes while the page loads.
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#1d1d20" : "#f7f7f8",
+    // macOS: no title bar. The traffic lights sit in the sidebar's top row; the web app leaves room
+    // for them and marks its own drag regions (web/src/styles.css, "Desktop app").
+    ...(mac ? { titleBarStyle: "hiddenInset" as const, trafficLightPosition: { x: 16, y: 16 } } : {}),
+    // Linux shows the icon in the window list; macOS takes it from the app bundle.
+    ...(!mac ? { icon: path.join(APP_ROOT, "build", "icon.png") } : {}),
     webPreferences: {
       preload: path.join(APP_ROOT, "desktop", "preload.cjs"),
       contextIsolation: true, sandbox: true, nodeIntegration: false,
@@ -225,6 +232,8 @@ async function createWindow() {
     e.preventDefault();
     if (/^https?:/.test(target)) shell.openExternal(target);
   });
+  // An app window does not pinch-zoom like a web page.
+  win.webContents.setVisualZoomLevelLimits(1, 1);
   win.once("ready-to-show", () => win?.show());
   win.on("closed", () => { win = null; });
   await win.loadURL(url);
@@ -259,6 +268,8 @@ ipcMain.handle("stoa:open-logs", () => shell.openPath(LOG_DIR));
 // ---- Lifecycle ----
 
 app.whenReady().then(async () => {
+  // Running from source has no app bundle, so give the Dock the app icon.
+  if (!app.isPackaged && process.platform === "darwin") app.dock?.setIcon(path.join(APP_ROOT, "build", "icon.png"));
   try {
     await startServer();
     await createWindow();

@@ -6,7 +6,7 @@ import { Lessons, Messages, Runs, Topics, Uploads, type Run } from "./db.ts";
 import { PLUGIN_DIR, topicDir } from "./paths.ts";
 import { teacherMcp, tutorMcp } from "./mcp.ts";
 import { runtimeEnv } from "./runtimes.ts";
-import { TEACHER_SYSTEM, buildPrompt, intakePrompt, intakeReply, tutorSystem } from "./prompts.ts";
+import { TEACHER_SYSTEM, buildPrompt, intakePrompt, intakeReply, tutorSystem, videoRemakePrompt } from "./prompts.ts";
 import { uploadsNotice, uploadsSteer } from "./uploads.ts";
 
 const MODEL = process.env.LEARN_MODEL ?? "claude-opus-5-5";
@@ -233,6 +233,29 @@ export function requestNextLesson(topicId: string, reason: string) {
   Topics.update(topicId, { status_message: "Next lesson queued" });
   enqueue(topicId, () =>
     execute({ run, topicId, thread: "teacher", prompt: buildPrompt(reason, uploadsNotice(topicId)), options: teacherOptions(topicId), steerable: true }),
+  );
+  return true;
+}
+
+/**
+ * Queue a remake of one lesson's video (the learner asked from the video player). The old video
+ * stays attached and playable; the lesson shows "being remade" until Athena publishes the new one.
+ * Returns false when a remake of this lesson is already queued or running.
+ */
+export function requestVideoRemake(topicId: string, lessonId: string, reason: string) {
+  const lesson = Lessons.get(topicId, lessonId);
+  if (!lesson) return false;
+  if (Runs.active(topicId).some((r) => r.kind === "video" && r.lesson_id === lessonId)) return false;
+  const n = Lessons.list(topicId).findIndex((l) => l.id === lessonId) + 1;
+  Lessons.setVideo(topicId, lessonId, "planned", lesson.video_file, lesson.video_poster, null);
+  const run = Runs.create(topicId, "video", lessonId);
+  Topics.update(topicId, { status_message: `Remaking the video for lesson ${n}` });
+  enqueue(topicId, () =>
+    execute({
+      run, topicId, thread: "teacher",
+      prompt: videoRemakePrompt(lesson, n, reason.trim(), uploadsNotice(topicId)),
+      options: teacherOptions(topicId), steerable: true,
+    }),
   );
   return true;
 }

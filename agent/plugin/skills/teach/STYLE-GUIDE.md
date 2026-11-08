@@ -7,59 +7,56 @@ working example is in [LESSON-EXAMPLE.html](./LESSON-EXAMPLE.html): start every 
 
 ## The look in one paragraph
 
-White page, near-black text, one blue accent used only for actions, the current selection, focus
-and progress. System font, calm spacing, a 68-character reading column. No decoration: no
-gradients, no textures, no emoji as icons, no colored side stripes, no drop-shadow cards. The
-lesson leads; color appears where it means something (a right or wrong answer, a diagram series).
+White page, near-black text, a reading column of about 68 characters, system font, calm spacing.
+Color comes only from **the lesson palette** below, and it appears where it means something: an
+action, a right or wrong answer, a diagram series, a highlight. No decoration: no gradients, no
+textures, no emoji as icons, no colored side stripes, no drop-shadow cards.
 
-## What the app uses
+## The lesson palette (the only colors)
 
-- **Primary color:** blue `#2563eb` (`--accent`; hover `#1d4ed8`, soft tint `#eef3fe`). In dark
-  mode `#4f86f7`. It marks primary buttons, the current selection, focus rings and progress.
-- **Text:** `#0f0f11` (`--ink-1`), `#3f4048` (`--ink-2`), `#62636b` (`--ink-3`) on white `#ffffff`;
-  quiet panels `#f7f7f8` (`--surface-2`); hairlines `#e6e6e9` (`--line`).
-- **States:** correct `#15803d` (`--ok`), wrong `#b91c1c` (`--bad`), hint `#a16207` (`--warn`).
-- **Fonts:** the system sans for everything (`-apple-system, BlinkMacSystemFont, "Segoe UI",
-  system-ui, Roboto, "Noto Sans", sans-serif`; token `--font`); a math serif for formulas
-  (`"STIX Two Math", "Cambria Math", "Times New Roman", serif`; `--math`); the system monospace
-  for code (`ui-monospace, "SF Mono", Menlo, Consolas, monospace`; `--mono`). Weights 400, 500,
-  600 (titles 650). Sizes: body 17px, lede 19px, h2 22px, h1 32px, UI 14px.
+Lessons, reference pages, figures, simulations and videos use these five colors, plus black and
+white. Nothing else: no other hues, and no "nearby" shades of these.
 
-## The topic look (your colors)
+| Name | Hex | Token | What it is for |
+|---|---|---|---|
+| Charcoal | `#264653` | `--charcoal` | Primary buttons and links (light mode), strong figure lines |
+| Teal | `#2a9d8f` | `--teal` | Correct answers, focus, the topic accent, first diagram series |
+| Saffron | `#e9c46a` | `--saffron` | Hints and highlights (as a fill or tint, not as thin lines or text on white) |
+| Sandy | `#f4a261` | `--sandy` | A second accent in figures |
+| Sienna | `#e76f51` | `--sienna` | Wrong answers, warnings, the item to watch in a figure |
+| Black / white | | `--ink-1` … `--ink-3`, `--line`, `--surface-2` | Text, hairlines, quiet panels (grays are black mixed with white) |
 
-Each topic can have its own look, so an ESP32 course does not feel like a Spanish course. You
-choose it once per topic, at the first lesson, from the subject (for example a circuit-board
-green for electronics, a terracotta for Spanish, a chalkboard teal for maths) and you keep it for
-every lesson in the topic.
+- Tints of a palette color (for a soft background) are that color mixed with white, or with the
+  dark background in dark mode; the kit already provides them (`--topic-soft`, `--ok-soft` …).
+- Text: use ink (black) or charcoal on white. Teal, sandy, saffron and sienna are below 4.5:1
+  on white, so never use them for body text or small labels; use them for shapes, lines, fills,
+  icons and large figure labels.
+- Dark mode: the kit swaps charcoal for teal on actions and links, and white stands in for
+  charcoal in figures. Use the tokens, never the hex values, and dark mode works by itself.
+- Check your page with `mcp__learn__preview_page`: it renders it in both themes and lists any
+  text below 4.5:1 contrast and any color outside the palette.
+- The app enforces the tokens: it loads the palette after your styles, so `--topic`, `--viz-*`,
+  `--ok`, `--bad` and the rest always resolve to the palette. Hard-coded hex values are the only
+  way to break it, so do not write them.
 
-- Put it in `library/topic.css` and link it from every lesson and reference page:
-  `<link rel="stylesheet" href="../library/topic.css">` (after the `<title>`).
-- Set the three topic tokens. The kit uses them for callouts, step numbers and glossary terms:
-  `--topic` (the topic color), `--topic-soft` (a pale tint for backgrounds), `--topic-ink` (a dark
-  shade for text on white and on the tint). Define a dark-mode version too.
-- You may add more colors of your own (`--topic-2`, `--topic-3`, illustration colors) for
-  diagrams, simulations, illustrations, section art and the video. Use them freely in figures.
-- Contrast: `--topic-ink` must reach 4.5:1 on white and on `--topic-soft`; check it.
-- Keep these as the app's: the primary button, focus rings, correct and wrong states, and the
-  fonts. Topic colors decorate and explain; they never signal right or wrong.
+## The topic look
 
-```css
-/* library/topic.css: Electronics */
-:root { --topic: #0f8a5f; --topic-soft: #e8f6ef; --topic-ink: #0b5e41; --topic-2: #d4a017; }
-:root[data-theme="dark"] { --topic: #3cc48f; --topic-soft: #12271e; --topic-ink: #8fe3bf; --topic-2: #e9bd45; }
-```
+Topics share one palette; a topic's character comes from its figures, examples and video, not
+from new colors. Do not create `library/topic.css` color overrides (old ones are overridden by the
+palette). For extra figure colors use `var(--topic-2)` (sandy), `var(--topic-3)` (sienna),
+`var(--topic-4)` (saffron) and `var(--topic-5)` (charcoal in light mode, white in dark mode), each
+with a `-soft` tint.
 
 ## Rules
 
 1. **Do not set the page fonts, base text colors, or the page background.** Do not link other
    font files or CSS frameworks for the page itself. The kit sets them, and it also switches to
-   dark mode when the learner chooses it; hard-coded colors break dark mode. Your colors come in
-   through the topic look above.
+   dark mode when the learner chooses it; hard-coded colors break dark mode and the palette.
 2. **Use tokens for any color you need**, for example in an inline SVG diagram or a simulation:
    `var(--ink-1)` (text), `var(--ink-2)`, `var(--ink-3)` (secondary), `var(--line)`,
-   `var(--surface-2)` (quiet panel), `var(--accent)`, `var(--ok)`, `var(--bad)`, and the diagram
-   series `var(--viz-1)` … `var(--viz-5)` (blue, red, teal, amber, violet), and your topic
-   colors `var(--topic)`, `var(--topic-2)` and so on. In canvas code, read
+   `var(--surface-2)` (quiet panel), `var(--accent)`, `var(--ok)`, `var(--bad)`, the diagram
+   series `var(--viz-1)` … `var(--viz-5)` (teal, sienna, saffron, sandy, charcoal/white), and
+   the topic colors `var(--topic)`, `var(--topic-2)` … `var(--topic-5)`. In canvas code, read
    them with `getComputedStyle(document.documentElement).getPropertyValue("--viz-1")`.
 3. **Structure:** everything inside one `<main>`. Order: `.meta` line, `<h1>`, `.lede` (which says, in a normal
    sentence, how this lesson connects to the learner's goal), the video area, then sections with `<h2>`, then exercises, then
@@ -130,7 +127,7 @@ each page a `<title>`; the app lists references by their title.
 
 ## Videos
 
-Videos should feel like the same product: white or `#f7f7f8` background, ink `#0f0f11`, the
-topic colors from `library/topic.css` as the main accents (else the app blue `#2563eb`), the
-diagram series `#2563eb #e5484d #12a594 #d97706 #8e4ec6`, and one neutral sans for all on-screen
-text. The `lesson-video` skill has the details.
+Videos use the lesson palette too: white or `#f7f7f8` background (or a charcoal `#264653`
+title card), ink `#0f0f11`, and only `#264653 #2a9d8f #e9c46a #f4a261 #e76f51` for accents and
+diagram series (in that role order: teal, sienna, saffron, sandy, charcoal). One neutral sans
+for all on-screen text. The `lesson-video` skill has the details.

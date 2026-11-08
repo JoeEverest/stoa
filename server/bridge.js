@@ -54,6 +54,17 @@
     },
   };
 
+  // ---- Keys the app owns: ⌘\ (Ctrl+\ elsewhere) shows or hides the sidebar, also while the lesson has focus. ----
+  if (inApp) {
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "\\" && (mac ? e.metaKey : e.ctrlKey) && !e.altKey && !e.shiftKey) {
+        e.preventDefault();
+        notifyParent("toggle-sidebar", null);
+      }
+    });
+  }
+
   // ---- Links: inside the app, a link to another workspace page changes the app's view, so this
   // page stays loaded with the learner's work. External links open in a new tab. ----
   if (inApp && topic) {
@@ -111,46 +122,167 @@
   }
 
   // ---- Video area: <div data-learn-video></div> ----
+  // The app's own player: play/pause, seek, time, full screen, and a ⋯ menu with playback speed and
+  // "Remake this video…". While Athena remakes a video the old one stays playable, with a note.
   function esc(s) { return String(s || "").replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-  function render(slot, v) {
-    var state = v.video_status;
-    if (slot.getAttribute("data-learn-state") === state) return;
-    slot.setAttribute("data-learn-state", state);
+  function fmt(t) { t = Math.max(0, Math.floor(t || 0)); return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0"); }
+  var ICON = {
+    play: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>',
+    full: '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></svg>',
+    more: '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.1" fill="currentColor"/><circle cx="8" cy="8" r="1.1" fill="currentColor"/><circle cx="12.5" cy="8" r="1.1" fill="currentColor"/></svg>',
+  };
+  var SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+  function savedSpeed() { try { var v = parseFloat(localStorage.getItem("stoa-video-speed")); return SPEEDS.indexOf(v) >= 0 ? v : 1; } catch (e) { return 1; } }
+
+  function note(slot, v) {
+    var el = slot.querySelector(".learn-video-note");
+    if (!el) return;
+    var text = v.video_status === "planned" ? "Athena is remaking this video. Keep watching this one; the new video replaces it here when it is ready."
+      : v.video_status === "failed" ? "Athena could not make the new video" + (v.video_message ? ": " + v.video_message : ".") + " This is the earlier one."
+      : "";
+    el.textContent = text;
+    el.hidden = !text;
+    var remake = slot.querySelector(".learn-video-remake");
+    if (remake) { remake.disabled = v.video_status === "planned"; remake.textContent = v.video_status === "planned" ? "Athena is remaking this video" : "Remake this video…"; }
+  }
+
+  function buildPlayer(slot, v, bust) {
     var w = "/w/" + encodeURIComponent(topic) + "/";
-    if (state === "ready") {
-      // Without a poster, "#t=0.1" makes the browser show the first frame instead of a black box.
-      var poster = v.video_poster ? ' poster="' + w + esc(v.video_poster) + '"' : "";
-      var src = w + esc(v.video_file) + (v.video_poster ? "" : "#t=0.1");
-      slot.innerHTML =
-        '<div class="learn-video">' +
-          '<video class="learn-video-player" preload="metadata" playsinline src="' + src + '"' + poster + "></video>" +
-        "</div>" +
-        // The control sits under the picture, so it never covers the drawing on the poster.
-        '<div class="learn-video-bar">' +
-          '<button class="learn-video-start" type="button">' +
-            '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>' +
-            "Play video" +
-          "</button>" +
-          '<span class="learn-video-caption">Narrated explainer by Athena<span class="learn-video-length"></span></span>' +
-        "</div>";
-      var video = slot.querySelector("video");
-      var start = slot.querySelector(".learn-video-start");
-      video.addEventListener("loadedmetadata", function () {
-        if (!isFinite(video.duration)) return;
-        var t = Math.round(video.duration), mm = Math.floor(t / 60), ss = String(t % 60).padStart(2, "0");
-        slot.querySelector(".learn-video-length").textContent = " · " + mm + ":" + ss;
-      });
-      function begin() {
-        if (video.controls) return;
-        slot.querySelector(".learn-video").classList.add("is-started");
-        slot.querySelector(".learn-video-bar").classList.add("is-started");
-        video.controls = true;
-        video.play();
-        video.focus();
+    var poster = v.video_poster ? ' poster="' + w + esc(v.video_poster) + (bust ? "?v=" + bust : "") + '"' : "";
+    // Without a poster, "#t=0.1" makes the browser show the first frame instead of a black box.
+    var src = w + esc(v.video_file) + (bust ? "?v=" + bust : "") + (v.video_poster ? "" : "#t=0.1");
+    var speed = savedSpeed();
+    slot.innerHTML =
+      '<div class="learn-video">' +
+        '<video class="learn-video-player" preload="metadata" playsinline src="' + src + '"' + poster + "></video>" +
+      "</div>" +
+      '<div class="learn-video-bar">' +
+        '<button class="learn-video-play" type="button">' + ICON.play + '<span class="learn-video-play-label">Play video</span></button>' +
+        '<input class="learn-video-seek" type="range" min="0" max="1000" step="1" value="0" aria-label="Position in the video">' +
+        '<span class="learn-video-time" aria-live="off">0:00</span>' +
+        '<button class="learn-video-icon learn-video-full" type="button" aria-label="Full screen" title="Full screen">' + ICON.full + "</button>" +
+        '<span class="learn-video-more-wrap">' +
+          '<button class="learn-video-icon learn-video-more" type="button" aria-label="More video options" title="More" aria-haspopup="menu" aria-expanded="false">' + ICON.more + "</button>" +
+          '<span class="learn-video-menu" role="menu" hidden>' +
+            '<span class="learn-video-menu-label">Playback speed</span>' +
+            '<span class="learn-video-speeds" role="group" aria-label="Playback speed">' +
+              SPEEDS.map(function (x) { return '<button type="button" data-speed="' + x + '" aria-pressed="' + (x === speed) + '">' + x + "×</button>"; }).join("") +
+            "</span>" +
+            '<span class="learn-video-menu-sep"></span>' +
+            '<button type="button" class="learn-video-menu-item learn-video-remake" role="menuitem">Remake this video…</button>' +
+            '<form class="learn-video-remake-form" hidden>' +
+              '<label>What should be better? <span>Optional. Athena reads this.</span>' +
+              '<textarea rows="3" placeholder="For example: work through it with me step by step, and let me try first"></textarea></label>' +
+              '<span class="learn-video-form-actions"><button type="button" class="btn btn-quiet learn-video-cancel">Cancel</button>' +
+              '<button type="submit" class="btn btn-primary">Remake video</button></span>' +
+            "</form>" +
+          "</span>" +
+        "</span>" +
+      "</div>" +
+      '<p class="learn-video-note" role="status" hidden></p>';
+
+    var box = slot.querySelector(".learn-video"), video = slot.querySelector("video");
+    var play = slot.querySelector(".learn-video-play"), seek = slot.querySelector(".learn-video-seek");
+    var time = slot.querySelector(".learn-video-time"), more = slot.querySelector(".learn-video-more");
+    var menu = slot.querySelector(".learn-video-menu"), form = slot.querySelector(".learn-video-remake-form");
+    video.playbackRate = speed;
+
+    function sync() {
+      var d = video.duration, t = video.currentTime;
+      var ready = isFinite(d) && d > 0;
+      seek.value = ready ? String(Math.round((t / d) * 1000)) : "0";
+      seek.style.setProperty("--p", ready ? (t / d) * 100 + "%" : "0%");
+      time.textContent = ready ? (video.currentTime > 0 || !video.paused ? fmt(t) + " / " : "") + fmt(d) : "";
+      var playing = !video.paused && !video.ended;
+      var label = playing ? "Pause" : t > 0 && !video.ended ? "Play" : "Play video";
+      if (play.getAttribute("data-label") !== label) { // only when it changes, not on every time update
+        play.setAttribute("data-label", label);
+        play.innerHTML = (playing ? ICON.pause : ICON.play) + '<span class="learn-video-play-label">' + label + "</span>";
+        play.setAttribute("aria-label", playing ? "Pause the video" : "Play the video");
       }
-      start.addEventListener("click", begin);
-      video.addEventListener("click", begin); // the poster itself also starts the video
-    } else if (state === "failed") {
+      box.classList.toggle("is-started", t > 0 || playing);
+    }
+    function toggle() { if (video.paused || video.ended) video.play(); else video.pause(); }
+    ["loadedmetadata", "timeupdate", "play", "pause", "ended", "seeked"].forEach(function (ev) { video.addEventListener(ev, sync); });
+    play.addEventListener("click", toggle);
+    video.addEventListener("click", toggle);
+    seek.addEventListener("input", function () {
+      if (isFinite(video.duration)) video.currentTime = (Number(seek.value) / 1000) * video.duration;
+      sync();
+    });
+    slot.querySelector(".learn-video-full").addEventListener("click", function () {
+      if (document.fullscreenElement) document.exitFullscreen(); else if (box.requestFullscreen) box.requestFullscreen();
+    });
+    // In full screen there is no bar, so the browser's own controls take over there.
+    document.addEventListener("fullscreenchange", function () { video.controls = document.fullscreenElement === box; });
+    // Keyboard on the player: space or K plays and pauses, the arrows move five seconds.
+    slot.addEventListener("keydown", function (e) {
+      if (e.target.closest("textarea, form")) return;
+      if (e.key === " " || e.key === "k") { if (e.target === seek || e.target === video || e.key === "k") { e.preventDefault(); toggle(); } }
+      else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        if (e.target === seek) return; // the range input moves itself
+        e.preventDefault(); video.currentTime = Math.max(0, video.currentTime + (e.key === "ArrowRight" ? 5 : -5));
+      }
+    });
+
+    function openMenu(open) {
+      menu.hidden = !open;
+      more.setAttribute("aria-expanded", String(open));
+      if (!open) { form.hidden = true; slot.querySelector(".learn-video-remake").hidden = false; }
+    }
+    more.addEventListener("click", function () { openMenu(menu.hidden); });
+    document.addEventListener("pointerdown", function (e) { if (!menu.hidden && !e.target.closest(".learn-video-more-wrap")) openMenu(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { openMenu(false); more.focus(); } });
+    slot.querySelectorAll("[data-speed]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var x = parseFloat(b.getAttribute("data-speed"));
+        video.playbackRate = x;
+        try { localStorage.setItem("stoa-video-speed", String(x)); } catch (e) {}
+        slot.querySelectorAll("[data-speed]").forEach(function (o) { o.setAttribute("aria-pressed", String(o === b)); });
+      });
+    });
+    slot.querySelector(".learn-video-remake").addEventListener("click", function () {
+      this.hidden = true; form.hidden = false; form.querySelector("textarea").focus();
+    });
+    slot.querySelector(".learn-video-cancel").addEventListener("click", function () { openMenu(false); });
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      post("/video/remake", { reason: form.querySelector("textarea").value }).then(function () {
+        openMenu(false);
+        note(slot, { video_status: "planned" });
+        slot.setAttribute("data-learn-state", "planned");
+        notifyParent("video-remake", null);
+        setTimeout(poll, 3000);
+      }).catch(function () {
+        var n = slot.querySelector(".learn-video-note");
+        n.textContent = "Stoa could not ask Athena for a new video. Try again in a moment.";
+        n.hidden = false;
+      }).finally(function () { submit.disabled = false; });
+    });
+    sync();
+  }
+
+  function render(slot, v) {
+    var prev = slot.getAttribute("data-learn-state");
+    var state = v.video_status;
+    var file = v.video_file || "";
+    if (file && (state === "ready" || state === "planned" || state === "failed")) {
+      // A remake just finished (same path, new content): rebuild with a fresh URL. Otherwise keep
+      // the player that is there, so a video the learner is watching does not restart.
+      var remade = prev === "planned" && state === "ready";
+      if (remade || slot.getAttribute("data-learn-file") !== file) buildPlayer(slot, v, remade ? Date.now() : 0);
+      slot.setAttribute("data-learn-file", file);
+      slot.setAttribute("data-learn-state", state);
+      note(slot, v);
+      return;
+    }
+    if (prev === state) return;
+    slot.setAttribute("data-learn-state", state);
+    slot.removeAttribute("data-learn-file");
+    if (state === "failed") {
       slot.innerHTML = '<div class="learn-video-wait">Athena could not make the video for this lesson.<small>' + esc(v.video_message) + "</small></div>";
     } else if (state === "planned") {
       slot.innerHTML = '<div class="learn-video-wait" role="status"><span class="bar" aria-hidden="true"></span>' +

@@ -47,9 +47,10 @@ A viewer gets ~1–3 seconds per screen on a phone, with the sound often off.
 
 ## Colour and surface
 
+- **Stoa's palette is fixed.** Only charcoal `#264653`, teal `#2a9d8f`, saffron `#e9c46a`, sandy
+  `#f4a261` and sienna `#e76f51`, plus black and white (and grays between them). No other hues,
+  and do not tint neutrals toward a hue. Light text goes on charcoal; dark text on the other four.
 - One accent, used for the one thing that matters on each screen. Two accents means neither wins.
-- Tint neutrals toward the palette hue (e.g. ink `#1d1b26` instead of `#000`, paper `#f7f5f1`
-  instead of `#fff`) unless the brief pins exact values.
 - On coloured backgrounds, secondary text is a darker/lighter shade of that background hue, not grey.
 - Contrast: support text ≥ 4.5:1, large text ≥ 3:1 — `npx hyperframes check` measures it. White
   on a mid green (e.g. `#22c55e`) fails; use dark text or a deeper green.
@@ -98,8 +99,8 @@ block decides). Then:
 
 - A frosted card at 80 % white over a plain gradient reads as solid white. The blur only shows with
   colour shapes behind it and the card around 55–65 % white.
-- White text on a mid green fails contrast (≈2.2:1); every tester hit it. Use dark text on a light
-  green tint, or a deep green (#15803d) with white.
+- White text on a mid colour fails contrast; every tester hit it. With the Stoa palette, white
+  text belongs only on charcoal (#264653); on teal, saffron, sandy or sienna use black text.
 - Testers liked restraint but called the cards "plain": give each screen one confident move — a
   colour block, an oversized number, a drawn line — rather than another neutral card.
 - A material idea taken from the brand itself (for Dproz: the hand-drawn wordmark became a pen

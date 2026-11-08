@@ -21,6 +21,7 @@ files:
   - shared/**
   - agent/plugin/**
   - LICENSE
+  - build/icon.png
 
 extraResources:
   - from: vendor/whisper/${platform}-${arch}

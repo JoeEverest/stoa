@@ -60,7 +60,7 @@ CREATE INDEX IF NOT EXISTS responses_lesson ON responses(topic_id, lesson_id, id
 CREATE TABLE IF NOT EXISTS runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   topic_id TEXT NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-  kind TEXT NOT NULL,                        -- intake | build | tutor
+  kind TEXT NOT NULL,                        -- intake | build | video | tutor
   lesson_id TEXT,
   status TEXT NOT NULL DEFAULT 'queued',     -- queued | running | done | error
   session_id TEXT,
@@ -108,7 +108,7 @@ export type Lesson = {
 };
 export type Message = { id: number; topic_id: string; thread: string; role: string; content: string; created_at: string };
 export type Run = {
-  id: number; topic_id: string; kind: "intake" | "build" | "tutor"; lesson_id: string | null;
+  id: number; topic_id: string; kind: "intake" | "build" | "video" | "tutor"; lesson_id: string | null;
   status: string; session_id: string | null; error: string | null; created_at: string; started_at: string | null;
 };
 

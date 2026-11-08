@@ -13,6 +13,7 @@ export const ArrowRight = (p: P) => <svg {...base(p)}><path d="M3.5 8h9M9 4.5 12
 export const ArrowUp = (p: P) => <svg {...base(p)}><path d="M8 12.5v-9M4.5 7 8 3.5 11.5 7" /></svg>;
 export const Check = (p: P) => <svg {...base(p)}><path className="check-path" d="m3.5 8.5 3 3 6-7" /></svg>;
 export const Stop = (p: P) => <svg {...base(p)}><rect x="4" y="4" width="8" height="8" rx="1.5" /></svg>;
+export const PanelLeft = (p: P) => <svg {...base(p)}><rect x="2" y="3" width="12" height="10" rx="2" /><path d="M6 3v10" /></svg>;
 export const PanelRight = (p: P) => <svg {...base(p)}><rect x="2" y="3" width="12" height="10" rx="2" /><path d="M10 3v10" /></svg>;
 export const Doc = (p: P) => <svg {...base(p)}><path d="M4.5 2h4.5L12 5v8.5a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5Z" /><path d="M9 2v3h3M6 8.5h4M6 11h3" /></svg>;
 export const Video = (p: P) => <svg {...base(p)}><rect x="2" y="4" width="9" height="8" rx="1.5" /><path d="m11 7 3-1.5v5L11 9" /></svg>;

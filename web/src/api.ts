@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 export type Topic = {
   id: string; title: string; phase: "intake" | "learning"; status_message: string | null;
   updated_at: string; busy?: boolean; lessonCount?: number; doneCount?: number;
+  /** Only in the topic list: the lesson to pick up (first unfinished, else the newest). */
+  next?: { id: string; title: string; n: number; done: boolean } | null;
 };
 export type Lesson = {
   id: string; file: string; title: string; video_status: "none" | "planned" | "ready" | "failed";

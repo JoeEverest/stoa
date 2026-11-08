@@ -54,7 +54,8 @@ One teacher run per topic at a time. Other runs for that topic wait in a queue.
 
 Every served workspace HTML page gets `<link rel="stylesheet" href="/stoa/lesson.css">` (the
 app's tokens from `shared/tokens.css` plus `shared/lesson.css`) and the bridge script, both before
-the page's own styles. The bridge copies the app's theme choice (`localStorage["stoa-theme"]`) onto the
+the page's own styles, and `/stoa/palette.css` (`shared/palette.css`) at the end of `<head>`, after
+them, so lesson colors always resolve to the lesson palette (five colors plus black and white). The bridge copies the app's theme choice (`localStorage["stoa-theme"]`) onto the
 page. Athena's rules: `agent/plugin/skills/teach/STYLE-GUIDE.md`.
 
 ## Bridge contract (`/bridge.js`, injected into every served workspace HTML page)
@@ -80,7 +81,8 @@ until the teacher publishes the video, then puts a `<video>` player there.
 |---|---|---|
 | `end_intake` | `title`, `summary` | Closes the intake chat in the UI |
 | `set_status` | `message` | Shows a one-line build status |
-| `publish_lesson` | `file`, `title`, `video` (`planned`/`none`) | Registers and shows a lesson |
+| `preview_page` | `file`, `themes?`, `widths?`, `selector?` | Renders a workspace page in Chrome (light/dark, desktop/phone) and returns screenshots plus a contrast and palette check (`server/preview.ts`) |
+| `publish_lesson` | `file`, `title`, `video` (`planned`/`none`) | Registers and shows a lesson. The server also publishes a lesson whose video was started without it |
 | `publish_video` | `lesson`, `file`, `poster?` | Attaches a rendered video to a lesson |
 | `video_failed` | `lesson`, `reason` | Marks the video as failed |
 | `get_responses` | `lesson?` | Returns assessment records |

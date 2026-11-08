@@ -98,7 +98,8 @@ its prose before you write.
 ## Explaining
 
 - **The first sentence teaches something.** No hooks, no "Have you ever wondered", no promise of
-  how exciting the topic is.
+  how exciting the topic is. Handing the learner a concrete problem to try ("Find the two numbers
+  that add up to seven.") is not a hook: it teaches, and it is how lesson videos start.
 - **Concrete before abstract.** Show a specific example first, then name the general rule.
 - **One new idea at a time.** Use it in an example before you bring in the next one.
 - **Define each new term in one plain sentence, then use that exact word every time.** Do not

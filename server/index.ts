@@ -7,8 +7,9 @@ import { Readable } from "node:stream";
 import { randomBytes } from "node:crypto";
 import { Lessons, Messages, Responses, Runs, Topics, Uploads } from "./db.ts";
 import { APP_ROOT, WEB_DIST, resolveInTopic, topicDir } from "./paths.ts";
-import { announceUploads, requestNextLesson, sendIntakeMessage, sendTutorMessage, stopTopicRuns, stopTopicRunsAndWait } from "./runner.ts";
+import { announceUploads, requestNextLesson, requestVideoRemake, sendIntakeMessage, sendTutorMessage, stopTopicRuns, stopTopicRunsAndWait } from "./runner.ts";
 import { deleteAgentSessions, killProcessesIn, removeFolder } from "./cleanup.ts";
+import { publishStrandedLessons } from "./mcp.ts";
 import { DESKTOP, checkClaude, setApiKey, setupState, startToolInstall } from "./setup.ts";
 import { writeShims } from "./runtimes.ts";
 import { UploadError, checkName, deleteUpload, saveUpload } from "./uploads.ts";
@@ -64,6 +65,7 @@ function sendFile(c: Context, abs: string) {
 
 app.get("/bridge.js", (c) => c.body(BRIDGE, 200, { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-cache" }));
 app.get("/stoa/lesson.css", (c) => c.body(LESSON_CSS(), 200, { "content-type": "text/css; charset=utf-8", "cache-control": "no-cache" }));
+app.get("/stoa/palette.css", (c) => c.body(readShared("palette.css"), 200, { "content-type": "text/css; charset=utf-8", "cache-control": "no-cache" }));
 
 app.get("/w/:topic/*", (c) => {
   const topic = c.req.param("topic");
@@ -75,6 +77,10 @@ app.get("/w/:topic/*", (c) => {
     // Kit first, so the page's own styles override it; the bridge sets the theme before paint.
     const tag = `<link rel="stylesheet" href="/stoa/lesson.css"><script src="/bridge.js"></script>`;
     html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + tag) : tag + html;
+    // The lesson palette goes last, after the page's own styles and its topic.css, so lessons keep
+    // to the palette (shared/palette.css) even when a topic once chose other colors.
+    const palette = `<link rel="stylesheet" href="/stoa/palette.css">`;
+    html = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, palette + "</head>") : html + palette;
     return c.html(html, 200, { "cache-control": "no-cache" });
   }
   return sendFile(c, abs);
@@ -117,6 +123,7 @@ function exerciseCount(topicId: string, file: string) {
 function topicState(id: string) {
   const topic = Topics.get(id);
   if (!topic) return null;
+  if (topic.phase === "learning") publishStrandedLessons(id);
   const counts = new Map(Responses.counts(id).map((r) => [r.lesson_id, r]));
   const lessons = Lessons.list(id).map((l) => ({
     ...l, responses: counts.get(l.id) ?? { n: 0, right: 0, graded: 0 }, exercises: exerciseCount(id, l.file),
@@ -124,11 +131,13 @@ function topicState(id: string) {
   const active = Runs.active(id);
   const lastTeacher = Runs.last(id, "build") ?? Runs.last(id, "intake");
   const teacherRun = active.find((r) => r.kind !== "tutor" && r.status === "running");
-  const building = active.some((r) => r.kind === "build") || (topic.phase === "learning" && active.some((r) => r.kind === "intake"));
+  const building = active.some((r) => r.kind === "build" || r.kind === "video") || (topic.phase === "learning" && active.some((r) => r.kind === "intake"));
   // A run makes a new lesson only if the newest lesson existed before it started; otherwise it is
   // still finishing that lesson (its video, notes, references).
   const newest = lessons.at(-1);
-  const buildingNew = building && (!newest || !teacherRun?.started_at || newest.created_at < teacherRun.started_at);
+  // Only a build (or the intake run that goes on to lesson 1) makes a new lesson; a video remake does not.
+  const makesLesson = active.some((r) => r.kind === "build" || r.kind === "intake") && teacherRun?.kind !== "video";
+  const buildingNew = building && makesLesson && (!newest || !teacherRun?.started_at || newest.created_at < teacherRun.started_at);
   return {
     topic,
     lessons,
@@ -145,11 +154,15 @@ function topicState(id: string) {
 api.get("/topics", (c) =>
   c.json(Topics.list().map((t) => {
     const lessons = Lessons.list(t.id);
+    // The lesson to pick up: the first one not finished, else the newest. For "Continue learning".
+    const i = lessons.findIndex((l) => !l.completed_at);
+    const at = i >= 0 ? i : lessons.length - 1;
     return {
       ...t,
       busy: Runs.active(t.id).some((r) => r.kind !== "tutor"),
       lessonCount: lessons.length,
       doneCount: lessons.filter((l) => l.completed_at).length,
+      next: at >= 0 ? { id: lessons[at].id, title: lessons[at].title, n: at + 1, done: !!lessons[at].completed_at } : null,
     };
   })));
 
@@ -307,6 +320,17 @@ api.post("/topics/:id/lessons/:lesson/complete", async (c) => {
   const newest = Lessons.list(id).at(-1)?.id;
   const queued = newest === lesson ? requestNextLesson(id, `the learner completed lesson ${lesson}`) : false;
   return c.json({ ok: true, queued });
+});
+
+/** The learner asks Athena for a new video for a lesson. Body: { reason?: string } (what should be better). */
+api.post("/topics/:id/lessons/:lesson/video/remake", async (c) => {
+  const id = c.req.param("id"), lesson = c.req.param("lesson");
+  const l = Lessons.get(id, lesson);
+  if (!l) return c.notFound();
+  if (!l.video_file && l.video_status !== "failed") return c.json({ error: "This lesson has no video to remake yet." }, 409);
+  const body = await c.req.json<{ reason?: unknown }>().catch(() => ({} as { reason?: unknown }));
+  const reason = typeof body.reason === "string" ? body.reason.slice(0, 2000) : "";
+  return c.json({ queued: requestVideoRemake(id, lesson, reason) });
 });
 
 api.get("/topics/:id/lessons/:lesson/tutor", (c) =>

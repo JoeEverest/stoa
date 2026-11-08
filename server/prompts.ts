@@ -42,6 +42,22 @@ export function buildPrompt(reason: string, uploads = "") {
   );
 }
 
+/** The learner asked for a new video for a lesson (the ⋯ menu on the video player). */
+export function videoRemakePrompt(lesson: Lesson, n: number, reason: string, uploads = "") {
+  return (
+    `The learner asked you to remake the video for lesson ${n}, "${lesson.title}" (lesson ID ${lesson.id}, ` +
+    `file ${lesson.file}). ` +
+    (reason ? `In their words, what should be better:\n\n<learner>\n${reason}\n</learner>\n\n` : `They gave no reason. `) +
+    `This is a new session: read NOTES.md, the lesson file, and the existing video project in videos/${lesson.id}/ ` +
+    `(script.txt and storyboard.md if present). Load learn:teach and learn:lesson-video. Write a new script that follows ` +
+    `the lesson-video skill's "Script: teach, do not recite", get a pass from the learn:video-script-editor subagent, then ` +
+    `make the voice, render, look at the frames, and call publish_video for ${lesson.id}. The old video stays visible to ` +
+    `the learner until you publish the new one, so do not call publish_lesson for it and do not build a new lesson. ` +
+    `Change the lesson text only if the video's place in it must change. Record in NOTES.md what the learner did not like, ` +
+    `so later videos avoid it.${uploads}`
+  );
+}
+
 export function tutorSystem(lesson: Lesson) {
   return `
 # Role: the tutor for one lesson
