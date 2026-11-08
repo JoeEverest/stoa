@@ -124,11 +124,15 @@
       slot.innerHTML =
         '<div class="learn-video">' +
           '<video class="learn-video-player" preload="metadata" playsinline src="' + src + '"' + poster + "></video>" +
-          '<button class="learn-video-start" type="button" aria-label="Play the video">' +
-            '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>' +
-          "</button>" +
         "</div>" +
-        '<p class="learn-video-caption">Narrated explainer by Athena<span class="learn-video-length"></span></p>';
+        // The control sits under the picture, so it never covers the drawing on the poster.
+        '<div class="learn-video-bar">' +
+          '<button class="learn-video-start" type="button">' +
+            '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>' +
+            "Play video" +
+          "</button>" +
+          '<span class="learn-video-caption">Narrated explainer by Athena<span class="learn-video-length"></span></span>' +
+        "</div>";
       var video = slot.querySelector("video");
       var start = slot.querySelector(".learn-video-start");
       video.addEventListener("loadedmetadata", function () {
@@ -136,12 +140,16 @@
         var t = Math.round(video.duration), mm = Math.floor(t / 60), ss = String(t % 60).padStart(2, "0");
         slot.querySelector(".learn-video-length").textContent = " · " + mm + ":" + ss;
       });
-      start.addEventListener("click", function () {
+      function begin() {
+        if (video.controls) return;
         slot.querySelector(".learn-video").classList.add("is-started");
+        slot.querySelector(".learn-video-bar").classList.add("is-started");
         video.controls = true;
         video.play();
         video.focus();
-      });
+      }
+      start.addEventListener("click", begin);
+      video.addEventListener("click", begin); // the poster itself also starts the video
     } else if (state === "failed") {
       slot.innerHTML = '<div class="learn-video-wait">Athena could not make the video for this lesson.<small>' + esc(v.video_message) + "</small></div>";
     } else if (state === "planned") {

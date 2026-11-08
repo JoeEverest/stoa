@@ -11,7 +11,7 @@
 </head>
 <body>
 <main>
-  <p class="meta"><span>Lesson 2</span><span>About 12 minutes</span><span>Projectile motion</span></p>
+  <p class="meta"><span>Lesson 2</span><span>About 12 minutes</span></p>
   <h1>How to get the sideways and upward speeds from a launch</h1>
   <p class="lede">In lesson 1 you used two speeds: the sideways speed and the upward speed. But when you throw something, you usually know one speed and an angle instead, like "20 m/s at 35°". This lesson shows you how to turn that into the two speeds your program needs. It takes one right triangle and two lines of trigonometry.</p>
 
@@ -48,7 +48,7 @@
   </details>
 
   <section class="exercise" id="ex1">
-    <span class="count">Exercise 1 of 2</span>
+    <span class="count">Exercise 1 of 3</span>
     <h2>A ball leaves at 20 m/s and 35°. Find v<sub>x</sub> and v<sub>y</sub>.</h2>
     <div class="fields">
       <div class="field"><label for="vx">v<sub>x</sub> in m/s</label><input class="input" id="vx" inputmode="decimal" autocomplete="off"></div>
@@ -59,8 +59,9 @@
   </section>
 
   <section class="exercise" id="ex2">
-    <span class="count">Exercise 2 of 2</span>
+    <span class="count">Exercise 2 of 3</span>
     <h2>The launch angle gets bigger. What happens to v<sub>x</sub>?</h2>
+    <p class="hint-line">Pick an answer to check it.</p>
     <div class="options" role="group" aria-label="Answer options">
       <button class="option" data-answer="up">It gets bigger</button>
       <button class="option" data-answer="down">It gets smaller</button>
@@ -70,6 +71,7 @@
   </section>
 
   <section class="exercise">
+    <span class="count">Exercise 3 of 3</span>
     <h2>In your own words: why does a steeper throw go less far sideways?</h2>
     <div class="field"><label for="why" class="label">Your explanation</label><textarea class="input" id="why"></textarea></div>
     <div class="actions"><button class="btn" id="why-send">Send to Athena</button><span class="score" id="why-note"></span></div>
@@ -92,6 +94,12 @@
     document.getElementById("vx").className = "input " + (okx ? "is-correct" : "is-wrong");
     document.getElementById("vy").className = "input " + (oky ? "is-correct" : "is-wrong");
     const fb = document.getElementById("ex1-feedback");
+    // A correct answer is final: lock the fields and the button so the card reads as done.
+    if (okx && oky) {
+      ["vx", "vy"].forEach((id) => { document.getElementById(id).readOnly = true; });
+      const check = document.getElementById("ex1-check");
+      check.hidden = true; // the green feedback line is the result
+    }
     if (okx && oky) show(fb, "feedback ok", "Both right. You used cos for the sideways speed and sin for the upward speed: 20 · cos 35° ≈ 16.4 and 20 · sin 35° ≈ 11.5.");
     else if (near(vy, 14.1) || near(vx, 13.7)) { show(fb, "feedback bad", "Not yet."); fb.insertAdjacentHTML("beforeend", '<p class="hint">Check that your calculator is in degrees: sin 35° ≈ 0.574, so v<sub>y</sub> ≈ 11.5 m/s.</p>'); }
     else show(fb, "feedback bad", "Not yet. Check which function you used for each speed. The sideways speed is next to the angle, so it uses cos. The upward speed is opposite the angle, so it uses sin.");

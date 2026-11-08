@@ -23,14 +23,14 @@ export const sizeLabel = (n: number) =>
   n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`;
 
 /** A button that opens the file picker. */
-export function AttachButton({ onFiles, label = "Attach files", className = "btn btn-secondary", disabled }: {
-  onFiles: (files: File[]) => void; label?: string; className?: string; disabled?: boolean;
+export function AttachButton({ onFiles, label = "Attach files", className = "btn btn-secondary", disabled, icon = <I.Paperclip /> }: {
+  onFiles: (files: File[]) => void; label?: React.ReactNode; className?: string; disabled?: boolean; icon?: React.ReactNode;
 }) {
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
       <button type="button" className={className} onClick={() => input.current?.click()} disabled={disabled}>
-        <I.Paperclip />{label}
+        {icon}{label}
       </button>
       <input ref={input} type="file" multiple accept={ACCEPT} hidden
         onChange={(e) => { const files = [...(e.target.files ?? [])]; e.target.value = ""; if (files.length) onFiles(files); }} />
@@ -119,7 +119,7 @@ function RemoveButton({ name, onRemove }: { name: string; onRemove: () => Promis
   );
 }
 
-/** The "Your materials" section of the classroom outline. */
+/** The "Your course files" section of the classroom outline. */
 export function MaterialsList({ u, hrefFor, current, onPick, onAdded, working }: {
   u: Uploads; hrefFor: (file: string) => string; working: boolean; current: string | null; onPick: () => void; onAdded: (n: number, steered: boolean) => void;
 }) {
@@ -128,17 +128,17 @@ export function MaterialsList({ u, hrefFor, current, onPick, onAdded, working }:
   return (
     <div className={`refs materials ${drop.over ? "drop-over" : ""}`} {...drop.props}>
       <div className="col-head">
-        <span>Your materials</span>
-        {u.uploads.length > 0 && <AttachButton onFiles={add} label="Add" className="col-action" />}
+        <span>Your course files</span>
+        {u.uploads.length > 0 && <AttachButton onFiles={add} label="Add" className="col-action" icon={<I.Plus />} />}
       </div>
       {u.uploads.map((m) => {
         const s = status(m, working);
         const body = (
           <>
-            <I.Doc />
+            <I.Paperclip />
             <span className="mat-text">
-              <span className="mat-name">{m.name}</span>
-              <span className={`mat-meta ${s.tone}`}>{s.text}</span>
+              <FileName name={m.name} max={16} />
+              <span className={`mat-meta ${s.tone}`} title={s.text}>{s.text}</span>
             </span>
           </>
         );
@@ -158,11 +158,24 @@ export function MaterialsList({ u, hrefFor, current, onPick, onAdded, working }:
         </div>
       ))}
       {u.uploads.length === 0 && u.queue.length === 0 && (
-        <AttachButton onFiles={add} className="mat-empty" label="Add lecture notes, slides or a textbook. Athena teaches from them." />
+        <AttachButton onFiles={add} className="mat-empty"
+          label={<span className="mat-empty-text"><strong>Add course files</strong><span>Lecture notes, slides or a textbook. Athena teaches from them.</span></span>} />
       )}
       {u.errors.map((e) => <p key={e} className="mat-error" role="alert">{e}</p>)}
     </div>
   );
+}
+
+/** A file name cut to about `max` characters, keeping the extension ("PHYS101-lectu….pdf"). CSS still clips as a fallback. */
+export function FileName({ name, className = "mat-name", max = 24 }: { name: string; className?: string; max?: number }) {
+  const dot = name.lastIndexOf(".");
+  const ext = dot > 0 && name.length - dot <= 6 ? name.slice(dot) : "";
+  // Cut the middle: keep the start, the last few characters of the name and the extension ("PHYS101-…ure-4.pdf").
+  const keepEnd = Math.min(3, Math.max(0, name.length - ext.length - 4));
+  const stem = name.slice(0, name.length - ext.length);
+  const head = Math.max(4, max - 1 - keepEnd - ext.length);
+  const short = name.length <= max ? name : stem.slice(0, head) + "…" + stem.slice(stem.length - keepEnd) + ext;
+  return <span className={`${className} fname`} title={name}>{short}</span>;
 }
 
 /** Small file chips, for the intake chat and the new-topic page. */
@@ -175,7 +188,7 @@ export function FileChips({ items }: {
       {items.map((c) => (
         <li key={c.key} className="chip" title={c.meta ? `${c.name}: ${c.meta}` : c.name}>
           {c.busy ? <I.Spinner size={12} /> : <I.Doc size={14} />}
-          <span className="chip-name">{c.name}</span>
+          <FileName name={c.name} className="chip-name" />
           {c.meta && <span className="chip-meta">{c.meta}</span>}
           {c.onRemove && (
             <button type="button" className="chip-x" aria-label={`Remove ${c.name}`} onClick={() => c.onRemove?.()}><I.X size={12} /></button>

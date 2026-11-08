@@ -7,10 +7,11 @@ export type Topic = {
 export type Lesson = {
   id: string; file: string; title: string; video_status: "none" | "planned" | "ready" | "failed";
   completed_at: string | null; responses: { n: number; right: number; graded: number };
+  /** Exercise cards on the lesson page; null when unknown. */ exercises: number | null;
 };
 export type TopicState = {
   topic: Topic; lessons: Lesson[]; busy: boolean; building: boolean; buildingNew: boolean;
-  tutorBusy: string[]; lastError: string | null;
+  tutorBusy: string[]; lastError: string | null; workingSince: string | null;
 };
 export type Message = { id: number; role: "user" | "assistant" | "activity"; content: string; created_at: string };
 export type Reference = { file: string; title: string };

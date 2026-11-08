@@ -99,11 +99,28 @@ function workingTitle(message: string) {
   return t ? t[0].toUpperCase() + t.slice(1) : "New topic";
 }
 
+/** How many exercise cards a lesson page has (the kit's `.exercise` class), for "1 of 3 answered". Cached by mtime. */
+const exerciseCache = new Map<string, { mtime: number; n: number }>();
+function exerciseCount(topicId: string, file: string) {
+  const abs = resolveInTopic(topicId, file);
+  if (!abs) return null;
+  try {
+    const mtime = fs.statSync(abs).mtimeMs;
+    const hit = exerciseCache.get(abs);
+    if (hit?.mtime === mtime) return hit.n;
+    const n = (fs.readFileSync(abs, "utf8").match(/<section\b[^>]*\bclass="[^"]*\bexercise\b/gi) ?? []).length;
+    exerciseCache.set(abs, { mtime, n });
+    return n;
+  } catch { return null; }
+}
+
 function topicState(id: string) {
   const topic = Topics.get(id);
   if (!topic) return null;
   const counts = new Map(Responses.counts(id).map((r) => [r.lesson_id, r]));
-  const lessons = Lessons.list(id).map((l) => ({ ...l, responses: counts.get(l.id) ?? { n: 0, right: 0, graded: 0 } }));
+  const lessons = Lessons.list(id).map((l) => ({
+    ...l, responses: counts.get(l.id) ?? { n: 0, right: 0, graded: 0 }, exercises: exerciseCount(id, l.file),
+  }));
   const active = Runs.active(id);
   const lastTeacher = Runs.last(id, "build") ?? Runs.last(id, "intake");
   const teacherRun = active.find((r) => r.kind !== "tutor" && r.status === "running");
@@ -119,6 +136,8 @@ function topicState(id: string) {
     building,
     buildingNew,
     tutorBusy: active.filter((r) => r.kind === "tutor").map((r) => r.lesson_id),
+    /** When the teacher run that is working now started (UTC, SQLite format), for "Started 3 min ago". */
+    workingSince: teacherRun?.started_at ?? null,
     lastError: lastTeacher?.status === "error" ? lastTeacher.error : null,
   };
 }

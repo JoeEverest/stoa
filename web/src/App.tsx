@@ -72,10 +72,10 @@ function Main() {
   const topics = usePoll(api.topics, 4000, []);
   const [theme, setTheme] = useTheme();
   return (
-    <div className="shell">
+    <div className={`shell ${topicId ? "in-topic" : ""}`}>
       <aside className="rail" aria-label="Topics">
         <div className="brand"><I.Mark /><span>Stoa</span></div>
-        <a className="btn btn-secondary new-topic" href="#/"><I.Plus />New topic</a>
+        <a className="btn btn-secondary new-topic" href="#/" aria-label="New topic" title="New topic" aria-current={topicId ? undefined : "page"}><I.Plus /><span className="btn-label">New topic</span></a>
         <div className="rail-label" id="topics-label">Topics</div>
         <nav className="topic-list" aria-labelledby="topics-label">
           {topics.data?.length === 0 && <p className="rail-empty">Your topics appear here.</p>}
@@ -83,6 +83,7 @@ function Main() {
         </nav>
         <div className="rail-foot">
           <ThemeSwitch value={theme} onChange={setTheme} />
+          <ThemeCycle value={theme} onChange={setTheme} />
           <SettingsButton />
         </div>
       </aside>
@@ -100,14 +101,32 @@ function TopicLink({ topic, active }: { topic: Topic; active: boolean }) {
     ? topic.phase === "intake" ? "Athena is replying" : "Athena is working"
     : topic.phase === "intake" ? "Getting started"
     : topic.lessonCount ? `${topic.doneCount ?? 0} of ${topic.lessonCount} lessons done` : "First lesson coming";
+  // In the phone layout the topics are one scrolling row: keep the open topic in view.
+  const ref = useRef<HTMLAnchorElement>(null);
+  useEffect(() => {
+    if (active) ref.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [active]);
   return (
-    <a href={topicHref(topic.id)} className={`topic ${topic.busy ? "busy" : ""}`} aria-current={active ? "page" : undefined}>
+    <a ref={ref} href={topicHref(topic.id)} title={`${topic.title}: ${meta}`} className={`topic ${topic.busy ? "busy" : ""}`} aria-current={active ? "page" : undefined}>
       <span className="topic-icon">{topic.busy ? <I.Spinner size={14} /> : <span className="topic-dot" />}</span>
+      <span className={`topic-initial ${topic.busy ? "busy" : ""}`} aria-hidden="true">
+        {initials(topic.title)}
+      </span>
       <span className="topic-name">{topic.title}</span>
       <span className="topic-meta">{meta}</span>
     </a>
   );
 }
+
+/** Two letters for the narrow rail: "Projectile motion" -> "PM". */
+const initials = (title: string) =>
+  title.split(/\s+/).filter((w) => /^[\p{L}\p{N}]/u.test(w) && !/^(a|an|the|for|to|of|and|in|on)$/i.test(w))
+    .slice(0, 2).map((w) => w[0].toUpperCase()).join("") || title.slice(0, 1).toUpperCase();
+
+/** Phone layout: the way back from a topic to the list of topics. */
+const BackToTopics = () => (
+  <a className="topbar-back" href="#/" aria-label="All topics" title="All topics"><I.ArrowLeft /></a>
+);
 
 function ThemeSwitch({ value, onChange }: { value: ThemePref; onChange: (v: ThemePref) => void }) {
   const opts: [ThemePref, string, React.ReactNode][] = [
@@ -120,6 +139,18 @@ function ThemeSwitch({ value, onChange }: { value: ThemePref; onChange: (v: Them
           className={value === v ? "on" : ""} onClick={() => onChange(v)}>{icon}</button>
       ))}
     </div>
+  );
+}
+
+/** Phone layout: one button that steps through light, dark and system, in place of the three-way switch. */
+function ThemeCycle({ value, onChange }: { value: ThemePref; onChange: (v: ThemePref) => void }) {
+  const order: ThemePref[] = ["light", "dark", "system"];
+  const names = { light: "Light", dark: "Dark", system: "Match system" };
+  const nextPref = order[(order.indexOf(value) + 1) % order.length];
+  const Icon = value === "light" ? I.Sun : value === "dark" ? I.Moon : I.Monitor;
+  return (
+    <button className="btn btn-secondary icon-only theme-cycle" onClick={() => onChange(nextPref)}
+      aria-label={`Appearance: ${names[value]}. Switch to ${names[nextPref]}`} title={`Appearance: ${names[value]}`}><Icon /></button>
   );
 }
 
@@ -187,17 +218,14 @@ function NewTopic({ onCreated }: { onCreated: () => void }) {
           Say what you want to be able to do. Athena asks a few questions about your goal, then builds
           your first lesson: reading, a narrated video and exercises.
         </p>
-        <Composer value={text} onChange={setText} onSend={start} disabled={!!busy || !!pending} rows={3} autoFocus
-          placeholder="I want to learn…" sendLabel={busy ?? "Start"} big
+        <Composer value={text} onChange={setText} onSend={start} disabled={!!busy || !!pending} rows={2} autoFocus
+          placeholder="Describe what you want to be able to do…" sendLabel={busy ?? "Start"} big
           extra={<AttachButton onFiles={attach} disabled={!!busy} className="attach-btn" label="Attach course files" />}
           top={<FileChips items={files.map((f, i) => ({
             key: `${i}-${f.name}`, name: f.name, meta: sizeLabel(f.size),
             onRemove: busy ? undefined : () => setFiles((all) => all.filter((x) => x !== f)),
           }))} />} />
-        <p className="attach-hint">
-          Studying for a class? Attach your lecture notes, slides, textbook or past papers (PDF, Word, PowerPoint).
-          Athena teaches from them and follows your course.
-        </p>
+        <p className="attach-hint">Studying for a class? Attach notes, slides or a textbook (PDF, Word, PowerPoint) and Athena follows your course.</p>
         {error && <p className="error" role="alert">{error}</p>}
         {pending && !busy && (
           <div className="pending-actions">
@@ -229,12 +257,19 @@ function TopicView({ topicId, view, onChange }: { topicId: string; view: string 
 
   if (state.error && !s) return <div className="center"><p className="error" role="alert">{state.error}</p></div>;
   if (!s) return <div className="center"><I.Spinner label="Loading" /></div>;
-  const menu = <TopicMenu topic={s.topic} onDeleted={() => { onChange(); go(); }} />;
+  const videos = s.lessons.filter((l) => l.video_status === "ready").length;
+  const stakes = s.lessons.length
+    ? `${plural(s.lessons.length, "lesson")}${videos ? `, ${plural(videos, "video")}` : ""}, your files, answers and chats`
+    : "the chat with Athena and your files";
+  const menu = (extra?: MenuItem[]) => <TopicMenu topic={s.topic} stakes={stakes} extra={extra} onDeleted={() => { onChange(); go(); }} />;
   if (s.topic.phase === "intake") return <IntakeChat state={s} onSent={state.refresh} menu={menu} />;
   return <Classroom state={s} view={view} refresh={state.refresh} menu={menu} />;
 }
 
-function IntakeChat({ state, onSent, menu }: { state: TopicState; onSent: () => void; menu: React.ReactNode }) {
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+type MenuItem = { label: string; icon: React.ReactNode; onClick: () => void; className?: string };
+
+function IntakeChat({ state, onSent, menu }: { state: TopicState; onSent: () => void; menu: (extra?: MenuItem[]) => React.ReactNode }) {
   const { topic, busy, lastError } = state;
   const thread = useThread((after) => api.messages(topic.id, after), 1500, topic.id);
   const files = useUploads(topic.id);
@@ -251,17 +286,18 @@ function IntakeChat({ state, onSent, menu }: { state: TopicState; onSent: () => 
   return (
     <div className={`intake ${drop.over ? "drop-over" : ""}`} {...drop.props}>
       <header className="topbar">
+        <BackToTopics />
         <div className="topbar-title">
           <h1>{topic.title}</h1>
-          <p className="status">Athena is getting to know your goal. The first lesson starts after this chat.</p>
+          <p className="status"><span>Athena is getting to know your goal.<span className="wide-only"> The first lesson starts after this chat.</span></span></p>
         </div>
-        <div className="topbar-actions">{menu}</div>
+        <div className="topbar-actions">{menu()}</div>
       </header>
       <ChatLog messages={thread.messages} baseline={thread.baseline} typing={busy} who="Athena" />
       <div className="chat-dock">
         {lastError && !busy && <p className="error" role="alert">Athena stopped: {lastError}. Send a message to try again.</p>}
         {files.errors.map((e) => <p key={e} className="error" role="alert">{e}</p>)}
-        <Composer value={text} onChange={setText} onSend={send} disabled={busy} autoFocus
+        <Composer value={text} onChange={setText} onSend={send} disabled={busy} autoFocus rows={1}
           placeholder={busy ? "Athena is writing…" : "Reply to Athena"} sendLabel="Send"
           top={<FileChips items={uploadChips(files)} />}
           extra={<AttachButton onFiles={files.add} className="attach-btn" label="Attach course files" />} />
@@ -271,12 +307,13 @@ function IntakeChat({ state, onSent, menu }: { state: TopicState; onSent: () => 
 }
 
 function Classroom({ state, view, refresh, menu }: {
-  state: TopicState; view: string | null; refresh: () => void; menu: React.ReactNode;
+  state: TopicState; view: string | null; refresh: () => void; menu: (extra?: MenuItem[]) => React.ReactNode;
 }) {
   const { topic, lessons, building, lastError } = state;
   const refs = usePoll(() => api.references(topic.id), 8000, [topic.id]);
   const materials = useUploads(topic.id);
-  const [tutorOpen, setTutorOpen] = useState(true);
+  // The tutor starts open beside the lesson; on a phone it is a sheet the learner opens.
+  const [tutorOpen, setTutorOpen] = useState(() => !matchMedia("(max-width: 860px)").matches);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -287,6 +324,13 @@ function Classroom({ state, view, refresh, menu }: {
   const refPath = refFile?.split("#")[0] ?? null; // a link to a file may carry #page=12
   const refTitle = refs.data?.find((r) => r.file === refPath)?.title ?? materials.uploads.find((u) => u.file === refPath)?.name;
   const src = lesson ? `/w/${topic.id}/${lesson.file}` : refFile ? `/w/${topic.id}/${refFile}` : null;
+  // The lesson the learner read last, for the "Back to lesson" link above a reference page.
+  const lastLesson = useRef<Lesson | null>(null);
+  if (lesson) lastLesson.current = lesson;
+  const backTo = !lesson && refFile ? lastLesson.current ?? lessons.find((l) => !l.completed_at) ?? lessons.at(-1) ?? null : null;
+  // On a reference page the tutor keeps the context of the lesson the learner came from.
+  const tutorLesson = lesson ?? backTo;
+  const allDone = lessons.length > 0 && lessons.every((l) => l.completed_at);
 
   // Keep the pages the learner visited loaded in hidden frames, so switching to a reference and
   // back does not reload a lesson and lose what was typed. Hiding a frame keeps its document;
@@ -303,6 +347,7 @@ function Classroom({ state, view, refresh, menu }: {
   const makingVideo = building && !buildingNext && lessons.at(-1)?.video_status === "planned";
   // A lesson that Athena is building counts in every total, so the bar, the status and the switcher agree.
   const total = lessons.length + (buildingNext ? 1 : 0);
+  const workingLabel = buildingNext ? `Building lesson ${lessons.length + 1}` : makingVideo ? "Making the video" : "Finishing up";
   const arrivals = useArrivals(lessons.map((l) => l.id), lessons.filter((l) => l.completed_at).map((l) => l.id));
 
   // Lesson pages report submit/complete through postMessage; refresh state when they do.
@@ -335,42 +380,56 @@ function Classroom({ state, view, refresh, menu }: {
   return (
     <div className="classroom">
       <header className="topbar">
+        <BackToTopics />
         <div className="topbar-title">
           <h1>{topic.title}</h1>
           <div className="status">
-            <ProgressBar lessons={lessons} building={buildingNext} />
+            {lessons.length > 0 && <ProgressBar lessons={lessons} building={buildingNext} />}
             <span className="status-text" aria-live="polite">
               {lessons.length > 0 && <span>{doneCount} of {total} done</span>}
-              {building
+              {/* With no lesson yet, the page below shows Athena's status; do not repeat it here. */}
+              {building && lessons.length > 0
                 ? <span className="status-athena">Athena: {topic.status_message ?? "working on the next lesson"}</span>
+                : building ? null
                 : lastError ? <span className="error-text">Athena stopped: {lastError}</span>
                 : !lessons.length && topic.status_message ? <span>{topic.status_message}</span> : null}
             </span>
-            {building && <button className="link-btn" onClick={() => api.stop(topic.id).then(refresh)}>Stop</button>}
           </div>
         </div>
         <div className="topbar-actions">
-          {lesson && (
-            <button className="btn btn-secondary" onClick={() => setTutorOpen((o) => !o)} aria-pressed={tutorOpen}>
-              <I.PanelRight />{tutorOpen ? "Hide tutor" : "Show tutor"}
-            </button>
-          )}
+          {tutorLesson && <button className={`btn btn-secondary tutor-toggle ${tutorOpen ? "is-on" : ""}`} onClick={() => setTutorOpen((o) => !o)}
+            aria-pressed={tutorOpen} aria-label="Tutor" title={tutorOpen ? "Hide the tutor" : "Ask the tutor about this lesson"}>
+            <I.Chat /><span className="btn-label">Tutor</span>
+          </button>}
           {building
-            ? <span className="btn btn-secondary is-waiting" role="status"><I.Spinner size={14} />{buildingNext ? "Next lesson in progress" : makingVideo ? "Video in progress" : "Athena is finishing up"}</span>
-            : <button className="btn btn-primary" onClick={next} disabled={!lessons.length}>Next lesson<I.ArrowRight /></button>}
-          {menu}
+            ? <WaitingChip label={workingLabel} onStop={() => api.stop(topic.id).then(refresh)} />
+            // Finishing a lesson builds the next one, so mid-lesson the header has no build button;
+            // it is in the menu. When every lesson is done, building the next one is the main action.
+            : allDone && <button className="btn btn-primary build-btn" onClick={next}
+                title={`Ask Athena to build lesson ${lessons.length + 1} from your answers so far`}>
+                <span>Build lesson {lessons.length + 1}</span><I.ArrowRight />
+              </button>}
+          {/* On a phone the build and stop actions live in this menu, to keep the header to one row. */}
+          {menu(building
+            ? [{ label: "Stop Athena", icon: <I.Stop />, onClick: () => { api.stop(topic.id).then(refresh); }, className: "phone-only" }]
+            : [{ label: `Build lesson ${lessons.length + 1} now`, icon: <I.Plus />, onClick: next, className: allDone ? "phone-only" : "" }])}
         </div>
       </header>
-      <div className={`workspace ${lesson && tutorOpen ? "with-tutor" : ""}`}>
+      <div className={`workspace ${tutorLesson && tutorOpen ? "with-tutor" : ""}`}>
         <nav className={`outline ${outlineOpen ? "open" : ""}`} aria-label="Lessons and references">
           <button className="outline-toggle" aria-expanded={outlineOpen} onClick={() => setOutlineOpen((o) => !o)}>
             <span className="outline-toggle-text">
-              <span className="muted">{lesson ? `Lesson ${lessons.indexOf(lesson) + 1} of ${total}` : refPath?.startsWith("uploads/") ? "Your materials" : refFile ? "Reference" : "Lessons"}</span>
+              <span className="muted outline-toggle-meta">
+                <span>{lesson ? `Lesson ${lessons.indexOf(lesson) + 1} of ${total}` : refPath?.startsWith("uploads/") ? "Your course files" : refFile ? "Reference" : "Lessons"}</span>
+                {lessons.length > 0 && <span>{doneCount} done</span>}
+                {building && <span className="outline-working"><I.Spinner size={12} />{workingLabel}</span>}
+              </span>
               <span className="outline-toggle-title">{lesson?.title ?? refTitle ?? "Your first lesson"}</span>
+              <span className="outline-toggle-label">Lessons and files</span>
             </span>
             <I.Chevron className="outline-chevron" />
           </button>
-          <div className="col-head"><span>Lessons</span>{lessons.length > 0 && <span>{lessons.length} ready</span>}</div>
+          <div className="col-head"><span>Lessons</span></div>
           <ol className="lesson-list">
             {lessons.map((l, i) => (
               <LessonItem key={l.id} lesson={l} n={i + 1} active={l.id === current} topicId={topic.id} onPick={() => setOutlineOpen(false)}
@@ -380,7 +439,7 @@ function Classroom({ state, view, refresh, menu }: {
               <li className="li building" aria-live="polite">
                 <span className="num"><I.Spinner size={14} /></span>
                 <span className="li-name">{lessons.length ? `Lesson ${lessons.length + 1}` : "Your first lesson"}</span>
-                <span className="li-meta">{topic.status_message ?? "Athena is working"}</span>
+                <span className="li-meta">Athena is writing it</span>
               </li>
             )}
           </ol>
@@ -402,13 +461,28 @@ function Classroom({ state, view, refresh, menu }: {
                 : `${what} added. Athena reads ${it} when she builds the next lesson.`);
             }} />
         </nav>
-        <section className="stage" aria-label={lesson?.title ?? "Lesson"}>
-          {src ? shownPages.map((p) => (
-            <iframe key={p} src={p} hidden={p !== src} title={p === src ? lesson?.title ?? refTitle ?? "Reference" : "Hidden page"} />
-          ))
-            : <BuildingPlaceholder topicId={topic.id} message={topic.status_message} />}
+        <section className="stage" aria-label={lesson?.title ?? refTitle ?? "Lesson"}>
+          {refFile && (
+            <div className="stage-bar">
+              {backTo && (
+                <a className="back-link" href={topicHref(topic.id, backTo.id)}>
+                  <I.ArrowLeft />Back to lesson {lessons.indexOf(backTo) + 1}
+                </a>
+              )}
+              {refPath?.startsWith("uploads/") && <span className="stage-kind">Your course file</span>}
+            </div>
+          )}
+          <div className="stage-frames">
+            {src ? shownPages.map((p) => (
+              <iframe key={p} src={p} hidden={p !== src} title={p === src ? lesson?.title ?? refTitle ?? "Reference" : "Hidden page"} />
+            ))
+              : <BuildingPlaceholder topicId={topic.id} message={topic.status_message} since={state.workingSince} />}
+          </div>
         </section>
-        {lesson && tutorOpen && <Tutor key={lesson.id} topicId={topic.id} lesson={lesson} busy={state.tutorBusy.includes(lesson.id)} />}
+        {tutorLesson && tutorOpen && <>
+          <div className="tutor-scrim" onClick={() => setTutorOpen(false)} aria-hidden="true" />
+          <Tutor key={tutorLesson.id} topicId={topic.id} lesson={tutorLesson} n={lessons.indexOf(tutorLesson) + 1} busy={state.tutorBusy.includes(tutorLesson.id)} onClose={() => setTutorOpen(false)} />
+        </>}
       </div>
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
@@ -420,7 +494,8 @@ function ProgressBar({ lessons, building }: { lessons: Lesson[]; building: boole
   if (!lessons.length && !building) return null;
   const firstOpen = lessons.findIndex((l) => !l.completed_at);
   return (
-    <span className="segbar" aria-hidden="true">
+    <span className="segbar" aria-hidden="true"
+      title={`${lessons.filter((l) => l.completed_at).length} done${firstOpen >= 0 ? ` · lesson ${firstOpen + 1} in progress` : ""}${building ? " · next lesson being built" : ""}`}>
       {lessons.map((l, i) => (
         <span key={l.id} className={`seg ${l.completed_at ? "done" : i === firstOpen ? "current" : ""}`}><i /></span>
       ))}
@@ -440,8 +515,9 @@ function LessonItem({ lesson, n, active, topicId, fresh, justDone, onPick }: {
         <span className="num">{done ? <I.Check size={12} /> : n}</span>
         <span className="li-name">{lesson.title}</span>
         <span className="li-meta">
-          {r.graded > 0 && <span>{r.right}/{r.graded} correct</span>}
-          {lesson.video_status === "ready" && <span><I.Video size={14} />Video</span>}
+          {done ? r.graded > 0 && <span>{r.right} of {r.graded} correct</span>
+            : r.n > 0 && <span>{lesson.exercises ? `${Math.min(r.n, lesson.exercises)} of ${lesson.exercises} answered` : `${r.n} answered`}</span>}
+          {lesson.video_status === "ready" && <span title="The narrated video is ready"><I.Video size={14} />Video</span>}
           {lesson.video_status === "planned" && <span className="li-pending"><I.Spinner size={12} />Video in progress</span>}
           {lesson.video_status === "failed" && <span>No video</span>}
         </span>
@@ -450,8 +526,22 @@ function LessonItem({ lesson, n, active, topicId, fresh, justDone, onPick }: {
   );
 }
 
-function BuildingPlaceholder({ topicId, message }: { topicId: string; message: string | null }) {
+/** "Started 3 min ago", from a UTC SQLite time ("2026-11-07 18:02:11"). Updates every 20 s. */
+function useElapsed(since: string | null) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 20_000);
+    return () => clearInterval(t);
+  }, []);
+  if (!since) return null;
+  const min = Math.max(0, Math.floor((now - Date.parse(since.replace(" ", "T") + "Z")) / 60_000));
+  return min < 1 ? "Started less than a minute ago" : `Started ${plural(min, "minute")} ago`;
+}
+
+function BuildingPlaceholder({ topicId, message, since }: { topicId: string; message: string | null; since: string | null }) {
   const thread = useThread((after) => api.messages(topicId, after), 3000, topicId);
+  const elapsed = useElapsed(since);
+  const slow = !!since && Date.now() - Date.parse(since.replace(" ", "T") + "Z") > 8 * 60_000;
   const notes = thread.messages.filter((m) => m.role !== "user").slice(-5);
   return (
     <div className="building-page">
@@ -460,10 +550,13 @@ function BuildingPlaceholder({ topicId, message }: { topicId: string; message: s
         <div>
           <h2>Athena is building your first lesson</h2>
           <p className="status-cell" aria-live="polite">{message ?? "Researching sources"}</p>
+          {elapsed && <p className="elapsed">{elapsed}</p>}
         </div>
       </div>
       <p className="muted">
-        The reading part appears here first, usually within a few minutes. The narrated video follows when it has rendered.
+        {slow
+          ? "This is taking longer than usual. Athena is still working. You can keep waiting, or press Stop building and then choose Build lesson 1 now in the ⋯ menu."
+          : "The reading part appears here first, usually within a few minutes. The narrated video follows when it has rendered."}
       </p>
       <div className="skeleton" aria-hidden="true">
         <i style={{ width: "62%", height: 28 }} /><i style={{ width: "92%" }} /><i style={{ width: "84%" }} />
@@ -479,7 +572,27 @@ function BuildingPlaceholder({ topicId, message }: { topicId: string; message: s
   );
 }
 
-function Tutor({ topicId, lesson, busy }: { topicId: string; lesson: Lesson; busy: boolean }) {
+/** The header's "Athena is working" state, with a Stop that asks once before it stops the run. */
+function WaitingChip({ label, onStop }: { label: string; onStop: () => Promise<unknown> }) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 4000);
+    return () => clearTimeout(t);
+  }, [armed]);
+  return (
+    <>
+      <span className="waiting-chip" role="status"><I.Spinner size={14} />{label}</span>
+      <button type="button" className={`btn btn-secondary waiting-stop ${armed ? "armed" : ""}`}
+        onClick={() => (armed ? onStop().finally(() => setArmed(false)) : setArmed(true))}
+        title={armed ? "Click again to stop Athena" : "Stop Athena's work. Your lessons and chats are kept."}>
+        <I.Stop />{armed ? "Stop now?" : "Stop building"}
+      </button>
+    </>
+  );
+}
+
+function Tutor({ topicId, lesson, n, busy, onClose }: { topicId: string; lesson: Lesson; n: number; busy: boolean; onClose: () => void }) {
   const thread = useThread((after) => api.tutorMessages(topicId, lesson.id, after), 1500, `${topicId}:${lesson.id}`);
   const [text, setText] = useState("");
   const send = async (value = text) => {
@@ -492,18 +605,21 @@ function Tutor({ topicId, lesson, busy }: { topicId: string; lesson: Lesson; bus
   return (
     <aside className="tutor" aria-label="Tutor">
       <div className="tutor-head">
-        <h2>Tutor</h2>
-        <p>Ask about this lesson. Questions the lesson did not answer go to Athena for the next one.</p>
+        <div className="tutor-title">
+          <h2>Tutor</h2>
+          <button type="button" className="rail-icon-btn tutor-close" onClick={onClose} aria-label="Close the tutor" title="Close the tutor"><I.X /></button>
+        </div>
+        <p className="tutor-context" title={lesson.title}>Helps with lesson {n}</p>
       </div>
       <ChatLog messages={thread.messages} baseline={thread.baseline} typing={busy} who="Tutor" compact
         empty={
           <span className="suggestions">
-            <span>Stuck, or curious? Ask anything about “{lesson.title}”, or start with:</span>
+            <span>Ask anything about this lesson. Anything the lesson did not answer goes to Athena for your next lesson. Or start with:</span>
             {suggestions.map((q) => <button key={q} className="example" onClick={() => send(q)}>{q}</button>)}
           </span>
         } />
       <div className="chat-dock">
-        <Composer value={text} onChange={setText} onSend={() => send()} placeholder="Ask the tutor" rows={2} sendLabel="Send" iconOnly />
+        <Composer value={text} onChange={setText} onSend={() => send()} placeholder="Ask the tutor" rows={1} sendLabel="Ask" small />
       </div>
     </aside>
   );
@@ -511,7 +627,7 @@ function Tutor({ topicId, lesson, busy }: { topicId: string; lesson: Lesson; bus
 
 // ---- Topic menu and delete ----
 
-function TopicMenu({ topic, onDeleted }: { topic: Topic; onDeleted: () => void }) {
+function TopicMenu({ topic, stakes, extra = [], onDeleted }: { topic: Topic; stakes: string; extra?: MenuItem[]; onDeleted: () => void }) {
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -551,15 +667,17 @@ function TopicMenu({ topic, onDeleted }: { topic: Topic; onDeleted: () => void }
         aria-expanded={open} onClick={() => setOpen((o) => !o)}><I.More /></button>
       {open && (
         <div className="menu" role="menu">
+          {extra.map((it) => (
+            <button key={it.label} role="menuitem" className={`menu-item ${it.className ?? ""}`} onClick={() => { setOpen(false); it.onClick(); }}>{it.icon}{it.label}</button>
+          ))}
           <button role="menuitem" className="menu-item danger" onClick={confirm}><I.Trash />Delete topic…</button>
         </div>
       )}
       <dialog ref={dialog} className="confirm" aria-labelledby="del-title" onClose={() => setDeleting(false)}>
         <h2 id="del-title">Delete “{topic.title}”?</h2>
         <p>
-          This removes the topic and everything Athena made for it from this computer: lessons, videos,
-          reference sheets, the files you added, your answers, and the chats with Athena and the tutor. If Athena is working on
-          it, that work stops first. This can't be undone.
+          This removes {stakes} from this computer.
+          <strong> This can't be undone.</strong>
         </p>
         {error && <p className="error" role="alert">{error}</p>}
         <div className="confirm-actions">
@@ -581,33 +699,48 @@ function ChatLog({ messages, baseline, typing, who, compact, empty }: {
   messages: Message[]; baseline: number | null; typing: boolean; who: string; compact?: boolean; empty?: React.ReactNode;
 }) {
   const isFresh = (m: Message) => baseline !== null && m.id > baseline;
+  // Athena and the tutor are two different helpers; their avatars differ too.
+  const ava = <span className={`ava ${who === "Tutor" ? "ava-tutor" : ""}`} aria-hidden="true">{who[0]}</span>;
+  // A reply that follows another reply (with only activity rows between) is the same turn: no second name row.
+  const sameTurn = (i: number) => {
+    for (let j = i - 1; j >= 0; j--) {
+      if (messages[j].role === "activity") continue;
+      return messages[j].role === "assistant";
+    }
+    return false;
+  };
   // Scroll only the log itself; scrollIntoView would also scroll the page around it.
   const log = useRef<HTMLDivElement>(null);
   const first = useRef(true);
   useEffect(() => {
     const el = log.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: first.current ? "auto" : "smooth" });
-    first.current = false;
+    // The thread loads after mount: the first load with messages also jumps, without animation.
+    if (messages.length) first.current = false;
   }, [messages.length, typing]);
   return (
-    <div ref={log} className={`chat-log ${compact ? "compact" : ""}`}>
+    <div ref={log} className={`chat-log ${compact ? "compact" : ""} ${messages.length === 0 && !typing ? "is-empty" : ""}`}>
       <div className="chat-inner" aria-live="polite">
         {messages.length === 0 && !typing && empty && <p className="chat-empty">{empty}</p>}
-        {messages.map((m) =>
+        {messages.map((m, i) =>
           m.role === "user" ? (
             <div key={m.id} className={`msg me ${isFresh(m) ? "fresh" : ""}`}>{m.content}</div>
           ) : m.role === "activity" ? (
-            <div key={m.id} className={`msg activity ${isFresh(m) ? "fresh" : ""}`}>{m.content}</div>
+            <div key={m.id} className={`msg activity ${isFresh(m) ? "fresh" : ""}`}>
+              {/* The newest step is still running while Athena writes; earlier steps are done. */}
+              {typing && i === messages.length - 1 ? <I.Spinner size={12} /> : <I.Check size={12} />}
+              <span>{m.content}</span>
+            </div>
           ) : (
             <div key={m.id} className={`msg them ${isFresh(m) ? "fresh" : ""}`}>
-              <div className="who"><span className="ava" aria-hidden="true">{who[0]}</span>{who}</div>
+              {!sameTurn(i) && <div className="who">{ava}{who}</div>}
               <div className="md" dangerouslySetInnerHTML={{ __html: md(m.content) }} />
             </div>
           ),
         )}
         {typing && (
           <div className="msg them">
-            <div className="who"><span className="ava" aria-hidden="true">{who[0]}</span>{who}</div>
+            <div className="who">{ava}{who}</div>
             <span className="typing" role="status" aria-label={`${who} is writing`}><i /><i /><i /></span>
           </div>
         )}
@@ -616,24 +749,32 @@ function ChatLog({ messages, baseline, typing, who, compact, empty }: {
   );
 }
 
-function Composer({ value, onChange, onSend, disabled, placeholder, rows = 2, sendLabel, iconOnly, big, autoFocus, extra, top }: {
+function Composer({ value, onChange, onSend, disabled, placeholder, rows = 2, sendLabel, iconOnly, big, small, autoFocus, extra, top }: {
   value: string; onChange: (v: string) => void; onSend: () => void; disabled?: boolean; placeholder?: string;
-  rows?: number; sendLabel: string; iconOnly?: boolean; big?: boolean; autoFocus?: boolean;
+  rows?: number; sendLabel: string; iconOnly?: boolean; big?: boolean; small?: boolean; autoFocus?: boolean;
   /** Shown at the left of the bottom row (an attach button). */ extra?: React.ReactNode;
   /** Shown above the text (attached files). */ top?: React.ReactNode;
 }) {
+  // The field starts at `rows` lines and grows with the text, up to about eight lines.
+  const area = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = area.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [value]);
   return (
-    <form className={`composer ${big ? "big" : ""}`} onSubmit={(e) => { e.preventDefault(); onSend(); }}>
+    <form className={`composer ${big ? "big" : ""} ${small ? "small" : ""}`} onSubmit={(e) => { e.preventDefault(); onSend(); }}>
       {top}
       <textarea
-        value={value} rows={rows} placeholder={placeholder} disabled={disabled} autoFocus={autoFocus}
+        ref={area} value={value} rows={rows} placeholder={placeholder} disabled={disabled} autoFocus={autoFocus}
         aria-label={placeholder}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); onSend(); } }}
       />
       <div className="composer-row">
         {extra}
-        <span className="composer-hint">Enter to send · Shift+Enter for a new line</span>
+        <span className="composer-hint">Enter to {sendLabel.toLowerCase()} · Shift+Enter for a new line</span>
         {iconOnly
           ? <button className="send" type="submit" disabled={disabled || !value.trim()} aria-label={sendLabel}><I.ArrowUp /></button>
           : <button className="btn btn-primary" type="submit" disabled={disabled || !value.trim()}>{sendLabel}<I.ArrowRight /></button>}
