@@ -5,7 +5,7 @@ import { api, useArrivals, usePoll, useThread, type Lesson, type Message, type T
 import * as I from "./icons";
 import { Setup } from "./Setup";
 import { SettingsPage } from "./Settings";
-import { RailUpdateNotice } from "./Updates";
+import { UpdateButton } from "./Updates";
 import { ACCEPT, AttachButton, FileChips, MaterialsList, fileProblem, sizeLabel, uploadChips, useDropFiles, useUploads } from "./Materials";
 
 // ---- Routing: #/ (new topic), #/t/<topic>, #/t/<topic>/<lesson-id | ref:reference/x.html> ----
@@ -165,12 +165,13 @@ function Main() {
             </React.Fragment>
           ))}
         </nav>
-        <RailUpdateNotice />
         <div className="rail-foot">
-          <ThemeSwitch value={theme} onChange={setTheme} />
           <ThemeCycle value={theme} onChange={setTheme} />
-          <a className="rail-icon-btn" href="#/settings" aria-label="Settings" title="Settings"
-            aria-current={page === "settings" ? "page" : undefined}><I.Settings /></a>
+          <span className="rail-foot-end">
+            <a className="rail-icon-btn" href="#/settings" aria-label="Settings" title="Settings"
+              aria-current={page === "settings" ? "page" : undefined}><I.Settings /></a>
+            <UpdateButton />
+          </span>
         </div>
       </aside>
       <main className="main">
@@ -248,28 +249,14 @@ function BackToTopics() {
   );
 }
 
-function ThemeSwitch({ value, onChange }: { value: ThemePref; onChange: (v: ThemePref) => void }) {
-  const opts: [ThemePref, string, React.ReactNode][] = [
-    ["light", "Light", <I.Sun />], ["dark", "Dark", <I.Moon />], ["system", "Match system", <I.Monitor />],
-  ];
-  return (
-    <div className="theme-switch" role="radiogroup" aria-label="Appearance">
-      {opts.map(([v, label, icon]) => (
-        <button key={v} role="radio" aria-checked={value === v} title={label} aria-label={label}
-          className={value === v ? "on" : ""} onClick={() => onChange(v)}>{icon}</button>
-      ))}
-    </div>
-  );
-}
-
-/** Phone layout: one button that steps through light, dark and system, in place of the three-way switch. */
+/** One button that steps through light, dark and system. Settings → Appearance has all three at once. */
 function ThemeCycle({ value, onChange }: { value: ThemePref; onChange: (v: ThemePref) => void }) {
   const order: ThemePref[] = ["light", "dark", "system"];
   const names = { light: "Light", dark: "Dark", system: "Match system" };
   const nextPref = order[(order.indexOf(value) + 1) % order.length];
   const Icon = value === "light" ? I.Sun : value === "dark" ? I.Moon : I.Monitor;
   return (
-    <button className="btn btn-secondary icon-only theme-cycle" onClick={() => onChange(nextPref)}
+    <button className="rail-icon-btn theme-cycle" onClick={() => onChange(nextPref)}
       aria-label={`Appearance: ${names[value]}. Switch to ${names[nextPref]}`} title={`Appearance: ${names[value]}`}><Icon /></button>
   );
 }

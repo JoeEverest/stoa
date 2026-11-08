@@ -133,14 +133,22 @@ export function UpdatesSection() {
   );
 }
 
-/** A quiet line above the sidebar's foot when an update is ready (or available to download). */
-export function RailUpdateNotice() {
+/**
+ * The sidebar's update button, beside Settings. It appears only when the background check
+ * (desktop/updater.ts: at launch, then every six hours) finds a newer release, and opens
+ * Settings → Updates, where the restart asks first if Athena is working.
+ */
+export function UpdateButton() {
   const s = useUpdates();
-  if (!s?.latest || !(s.state === "ready" || (s.state === "available" && !s.auto))) return null;
+  if (!s?.latest || !["available", "downloading", "ready"].includes(s.state)) return null;
+  const v = s.latest.version;
+  const label = s.state === "ready" ? `Stoa ${v} is ready. Restart to update`
+    : s.state === "downloading" ? `Downloading Stoa ${v}`
+    : `Stoa ${v} is available`;
   return (
-    <a className="rail-update" href="#/settings" title={`Stoa ${s.latest.version} is ${s.state === "ready" ? "ready to install" : "available"}`}>
-      <span className="update-dot" aria-hidden="true" />
-      <span className="btn-label">{s.state === "ready" ? `Restart to update to ${s.latest.version}` : `Stoa ${s.latest.version} is available`}</span>
+    <a className={`rail-icon-btn update-btn ${s.state === "ready" ? "is-ready" : ""}`} href="#/settings/updates" aria-label={label} title={label}>
+      <I.Update />
+      {s.state === "ready" && <span className="update-badge" aria-hidden="true" />}
     </a>
   );
 }

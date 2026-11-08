@@ -47,5 +47,13 @@ export function Mark({ size = 20 }: { size?: number }) {
 
 export const Paperclip = (p: P) => <svg {...base(p)}><path d="M13 7.5 8.1 12.4a3 3 0 0 1-4.25-4.24l5.3-5.3a2 2 0 0 1 2.83 2.83L6.7 10.98a1 1 0 0 1-1.41-1.41L10 4.86" /></svg>;
 export const X = (p: P) => <svg {...base(p)}><path d="m4.5 4.5 7 7M11.5 4.5l-7 7" /></svg>;
-export const Settings = (p: P) => <svg {...base(p)}><path d="M2.5 4.5h6M11.5 4.5h2M2.5 11.5h2M7.5 11.5h6" /><circle cx="10" cy="4.5" r="1.5" /><circle cx="6" cy="11.5" r="1.5" /></svg>;
+/** A cog. Drawn on a 24 grid (stroke scaled to match the 16-grid family's 1.5 at 16px). */
+export const Settings = ({ size = 16, ...p }: P) => (
+  <svg {...base({ size, ...p })} viewBox="0 0 24 24" strokeWidth={2.1}>
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+/** An update waiting: an arrow down into a tray. */
+export const Update = (p: P) => <svg {...base(p)}><path d="M8 2.5v7M5 6.75 8 9.75l3-3M2.75 10.5v1.75c0 .69.56 1.25 1.25 1.25h8c.69 0 1.25-.56 1.25-1.25V10.5" /></svg>;
 export const ArrowLeft = (p: P) => <svg {...base(p)}><path d="M12.5 8h-9M7 4.5 3.5 8 7 11.5" /></svg>;

@@ -16,6 +16,13 @@ export function SettingsPage({ theme, onTheme, toggle }: { theme: ThemePref; onT
   const desktop = s?.desktop ? (s as Desktop) : null;
   const [checking, setChecking] = useState(false);
 
+  // #/settings/updates (the sidebar's update button) opens at the Updates section.
+  useEffect(() => {
+    if (!location.hash.endsWith("/updates")) return;
+    const t = setTimeout(() => document.getElementById("updates")?.scrollIntoView({ block: "start" }), 50);
+    return () => clearTimeout(t);
+  }, []);
+
   // Look again for a Claude Code login when the page opens: the learner may have signed in or out.
   useEffect(() => {
     if (!window.stoaDesktop) return;

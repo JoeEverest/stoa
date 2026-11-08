@@ -30,7 +30,7 @@ svg { flex: none; }
   font-weight: 500; font-size: var(--text-ui); white-space: nowrap; cursor: pointer;
   transition: transform var(--t-press) var(--ease-out), background-color var(--t-fast) ease, border-color var(--t-fast) ease, color var(--t-fast) ease;
 }
-.btn:active:not(:disabled), .send:active:not(:disabled), .example:active, .theme-switch button:active { transform: scale(0.97); }
+.btn:active:not(:disabled), .send:active:not(:disabled), .example:active { transform: scale(0.97); }
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn:focus-visible { border-radius: var(--r-md); }
 .btn-primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 30%, transparent); }
@@ -120,19 +120,7 @@ svg { flex: none; }
 }
 .rail-icon-btn:hover { background: var(--surface-3); color: var(--ink-1); }
 .rail-icon-btn:active { transform: scale(0.97); }
-.theme-cycle { display: none; }
-.theme-switch {
-  display: inline-flex; gap: 2px; padding: 2px;
-  border-radius: var(--r-md); background: var(--surface-3);
-}
-.theme-switch button {
-  width: 32px; height: 28px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink-3);
-  display: grid; place-items: center; cursor: pointer;
-  transition: transform var(--t-press) var(--ease-out), background-color var(--t-fast) ease, color var(--t-fast) ease;
-}
-.theme-switch button:hover { color: var(--ink-1); }
-.theme-switch button.on { background: var(--bg); color: var(--accent-ink); box-shadow: var(--shadow-1); }
-:root[data-theme="dark"] .theme-switch button.on { background: var(--line-strong); }
+.rail-foot-end { display: inline-flex; align-items: center; gap: 2px; }
 
 /* ---------- Top bar ---------- */
 .topbar {
@@ -498,8 +486,6 @@ div.ref:hover { background: transparent; color: var(--ink-2); }
   .new-topic .btn-label { display: none; }
   .new-topic { border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--bg); box-shadow: var(--shadow-1); display: inline-flex; align-items: center; }
   .topic-count, .topic-tree { display: none; }
-  .theme-switch { display: none; }
-  .theme-cycle { display: inline-flex; }
   .rail-foot { grid-area: foot; margin: 0; gap: var(--s-1); }
   .composer-hint { visibility: hidden; }
   .topic-list {
@@ -586,7 +572,7 @@ div.ref:hover { background: transparent; color: var(--ink-2); }
   .seg.building { animation: none; }
   .spinner { animation-duration: 1.6s; }
   .typing i { animation: none; opacity: 0.6; }
-  .btn:active, .send:active, .example:active, .theme-switch button:active, .segctl button:active, .choice label:active, .rail-icon-btn:active { transform: none; }
+  .btn:active, .send:active, .example:active, .segctl button:active, .choice label:active, .rail-icon-btn:active { transform: none; }
 }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
@@ -842,18 +828,18 @@ select.field { appearance: none; padding-right: 32px; cursor: pointer;
 .desktop body { user-select: none; -webkit-user-select: none; cursor: default; }
 .desktop :is(.md, .msg.me, textarea, input, .setup-error p, .confirm p) { user-select: text; -webkit-user-select: text; }
 .desktop :is(button, .btn, .topic, .li, .ref, .example, .menu-item, .outline-toggle, summary, .attach-btn, .col-action) { cursor: default; }
-.desktop :is(.rail-head, .topbar, .new-topic-page, .setup-page) { -webkit-app-region: drag; }
+.desktop :is(.rail-head, .topbar, .settings-top, .new-topic-page, .setup-page) { -webkit-app-region: drag; }
 .desktop :is(button, a, input, textarea, select, label, .menu, .composer, .chips, .new-topic-inner > *, .setup-inner > *, .status) { -webkit-app-region: no-drag; }
 
 /* macOS: the traffic lights sit in the sidebar's top row; the sidebar toggle follows them. */
 .platform-darwin .rail { padding-top: 0; }
 .platform-darwin .rail-head { height: 44px; padding-left: 72px; }
 .platform-darwin .rail-head .brand { display: none; }
-.platform-darwin .rail-toggle { margin-left: 0; }
+.platform-darwin .rail-toggle { margin-left: auto; } /* open: far right of the sidebar's top row */
 .platform-darwin .main-toggle { top: 6px; left: 76px; }
 .platform-darwin .new-topic { margin-top: var(--s-1); }
 @media (min-width: 861px) {
-  .platform-darwin .shell.rail-collapsed .topbar { padding-left: 76px; } /* clear of the traffic lights */
+  .platform-darwin .shell.rail-collapsed :is(.topbar, .settings-top) { padding-left: 76px; } /* collapsed: the toggle follows the traffic lights */
   .platform-darwin .shell.rail-collapsed .new-topic-page { padding-top: 64px; }
 }
 
@@ -882,19 +868,12 @@ select.field { appearance: none; padding-right: 32px; cursor: pointer;
 .update-progress { display: flex; flex-direction: column; gap: 6px; font-size: var(--text-sm); }
 .toggle { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--text-ui); color: var(--ink-2); cursor: pointer; }
 .toggle input { margin: 0; accent-color: var(--teal-600); width: 16px; height: 16px; }
-.rail-update {
-  display: flex; align-items: center; gap: var(--s-2); margin: var(--s-2) 0; padding: 8px 10px; border-radius: var(--r-md);
-  background: var(--highlight-soft); color: var(--highlight-ink); font-size: var(--text-sm); font-weight: 500; line-height: 18px;
-  border: 1px solid color-mix(in srgb, var(--highlight) 45%, transparent);
-  transition: background-color var(--t-fast) ease, transform var(--t-press) var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .rail-update:hover { background: color-mix(in srgb, var(--highlight) 24%, var(--bg)); }
-}
-.rail-update:active { transform: scale(0.97); }
-.rail-update .update-dot { box-shadow: none; }
-.rail-collapsed .rail-update { display: none; }
-@media (prefers-reduced-motion: reduce) { .rail-update:active { transform: none; } }
 
 /* Theme change: one short cross-fade of the whole window (App.tsx, useTheme), not every color at once. */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 200ms; animation-timing-function: ease; }
+
+/* Sidebar foot: theme on the left; Settings and, when there is one, the update on the right. */
+.update-btn { position: relative; color: var(--accent-ink); }
+.update-badge { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--highlight); box-shadow: 0 0 0 2px var(--surface-2); }
+.update-btn.is-ready { background: var(--accent-soft); }
+@media (hover: hover) and (pointer: fine) { .update-btn.is-ready:hover { background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface-3)); } }
