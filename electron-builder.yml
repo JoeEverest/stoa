@@ -28,19 +28,27 @@ extraResources:
     to: whisper
     filter: ["**/*"]
 
+# Package names are what the in-app updater looks for (desktop/updater.ts): keep the arch in them.
 mac:
   category: public.app-category.education
+  artifactName: ${productName}-${version}-${arch}-mac.${ext}
   target:
     - target: dmg
     - target: zip
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
   # Signing and notarization use the standard CSC_LINK / APPLE_ID environment variables when set.
 
 linux:
   category: Education
+  artifactName: ${productName}-${version}-${arch}.${ext}
   target: [AppImage, deb]
   # .deb packages require a maintainer address; GitHub's no-reply address keeps a real one out.
   maintainer: Joe Everest <42711226+JoeEverest@users.noreply.github.com>
   synopsis: An AI teacher that builds lessons, videos and exercises for you.
+
+# Releases are uploaded by CI (.github/workflows/desktop.yml), not by electron-builder.
+publish: null

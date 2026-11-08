@@ -6,11 +6,10 @@ import { Lessons, Messages, Runs, Topics, Uploads, type Run } from "./db.ts";
 import { PLUGIN_DIR, topicDir } from "./paths.ts";
 import { teacherMcp, tutorMcp } from "./mcp.ts";
 import { runtimeEnv } from "./runtimes.ts";
+import { providerEnv, teacherModel, tutorModel } from "./settings.ts";
 import { TEACHER_SYSTEM, buildPrompt, intakePrompt, intakeReply, tutorSystem, videoRemakePrompt } from "./prompts.ts";
 import { uploadsNotice, uploadsSteer } from "./uploads.ts";
 
-const MODEL = process.env.LEARN_MODEL ?? "claude-opus-5-5";
-const TUTOR_MODEL = process.env.TUTOR_MODEL ?? MODEL;
 
 /** The app plugin's skills plus two built-in skills that help with research and charts. */
 const TEACHER_SKILLS = [
@@ -19,8 +18,12 @@ const TEACHER_SKILLS = [
   "dataviz",
 ];
 
-/** The agents' environment: this process's, plus the desktop app's video tools when installed. */
-const agentEnv = () => ({ ...process.env, ...runtimeEnv(), CLAUDE_AGENT_SDK_CLIENT_APP: "stoa/0.1.0" });
+/**
+ * The agents' environment: this process's, plus the desktop app's video tools when installed, with
+ * the connection from Settings (custom endpoint or Bedrock) applied. Read at each run, so a change
+ * in Settings applies to new work.
+ */
+const agentEnv = () => providerEnv({ ...process.env, ...runtimeEnv(), CLAUDE_AGENT_SDK_CLIENT_APP: "stoa/0.1.0" });
 
 /** One promise chain per key. Teacher runs use the topic ID; tutor runs use topic + lesson. */
 const chains = new Map<string, Promise<void>>();
@@ -187,7 +190,7 @@ export function announceUploads(topicId: string) {
 function teacherOptions(topicId: string, resume?: string): Options {
   return {
     cwd: topicDir(topicId),
-    model: MODEL,
+    model: teacherModel(),
     effort: "high",
     resume,
     systemPrompt: { type: "preset", preset: "claude_code", append: TEACHER_SYSTEM },
@@ -271,7 +274,7 @@ export function sendTutorMessage(topicId: string, lessonId: string, text: string
       run, topicId, thread, prompt: text,
       options: {
         cwd: topicDir(topicId),
-        model: TUTOR_MODEL,
+        model: tutorModel(),
         effort: "medium",
         resume: lesson.tutor_session_id ?? undefined,
         systemPrompt: tutorSystem(lesson),

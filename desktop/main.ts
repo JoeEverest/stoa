@@ -7,18 +7,20 @@
  * - app folders: data and video tools under the OS app-data folder (userData)
  * - the shell's PATH from a login shell (apps started from the Dock or a menu do not get it)
  * - a per-launch token cookie, so only this window can use the local server
- * - Claude access: the API key fallback, stored encrypted with safeStorage
+ * - Claude access: an API key, a custom endpoint token or a Bedrock key, stored encrypted with safeStorage
  * - whisper-cli from the app's resources (built in CI, see scripts/build-whisper.sh)
+ * - updates from GitHub Releases (desktop/updater.ts)
  *
  * Dev: `npm run desktop:dev` loads the Vite dev server (STOA_DEV_URL) and runs the server on the
  * fixed port Vite proxies to, without the token.
  */
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, safeStorage, session, shell, utilityProcess, type UtilityProcess } from "electron";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
+import { createUpdater } from "./updater.ts";
 
 const DEV_URL = process.env.STOA_DEV_URL;
 // A separate profile (data, video tools, key) for testing: STOA_USER_DATA=/some/folder.
@@ -86,20 +88,32 @@ function freePort() {
   });
 }
 
-// ---- API key (fallback when there is no Claude Code login) ----
+// ---- Secrets: the Anthropic API key, a custom endpoint's token, a Bedrock API key ----
 
-function readApiKey(): string | null {
+type SecretName = "anthropic" | "custom" | "bedrock";
+const SECRET_NAMES: SecretName[] = ["anthropic", "custom", "bedrock"];
+const SECRET_FILES: Record<SecretName, string> = {
+  anthropic: KEY_FILE,
+  custom: path.join(USER_DATA, "custom-token.bin"),
+  bedrock: path.join(USER_DATA, "bedrock-token.bin"),
+};
+/** How each secret reaches the server at start (server/settings.ts takes it out of the environment). */
+const SECRET_ENV: Record<SecretName, string> = {
+  anthropic: "ANTHROPIC_API_KEY", custom: "STOA_CUSTOM_TOKEN", bedrock: "STOA_BEDROCK_TOKEN",
+};
+
+function readSecret(name: SecretName): string | null {
   try {
-    const buf = fs.readFileSync(KEY_FILE);
+    const buf = fs.readFileSync(SECRET_FILES[name]);
     return safeStorage.isEncryptionAvailable() ? safeStorage.decryptString(buf) : buf.toString("utf8");
   } catch { return null; }
 }
 
-function writeApiKey(key: string | null) {
-  if (!key) return fs.rmSync(KEY_FILE, { force: true });
-  // Without an OS keychain (some Linux desktops) the key is kept readable only by this user.
-  const data = safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(key) : Buffer.from(key, "utf8");
-  fs.writeFileSync(KEY_FILE, data, { mode: 0o600 });
+function writeSecret(name: SecretName, value: string | null) {
+  if (!value) return fs.rmSync(SECRET_FILES[name], { force: true });
+  // Without an OS keychain (some Linux desktops) the secret is kept readable only by this user.
+  const data = safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(value) : Buffer.from(value, "utf8");
+  fs.writeFileSync(SECRET_FILES[name], data, { mode: 0o600 });
 }
 
 async function validateApiKey(key: string) {
@@ -133,10 +147,13 @@ async function startServer() {
     STOA_WHISPER_PATH: whisperPath(pathEnv),
   };
   delete env.ELECTRON_RUN_AS_NODE;
-  delete env.ANTHROPIC_API_KEY; // only the key the learner gave in setup is used
+  // Only the connection the learner set up in Stoa is used, not one from the shell that started it.
+  for (const k of ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_USE_BEDROCK", "ANTHROPIC_BEDROCK_BASE_URL", "AWS_BEARER_TOKEN_BEDROCK"]) delete env[k];
   if (token) env.STOA_TOKEN = token;
-  const key = readApiKey();
-  if (key) env.ANTHROPIC_API_KEY = key;
+  for (const name of SECRET_NAMES) {
+    const value = readSecret(name);
+    if (value) env[SECRET_ENV[name]] = value;
+  }
 
   fs.mkdirSync(LOG_DIR, { recursive: true });
   const log = fs.createWriteStream(path.join(LOG_DIR, "server.log"), { flags: "a" });
@@ -209,7 +226,7 @@ async function createWindow() {
     width: 1360, height: 880, minWidth: 900, minHeight: 600, show: false,
     title: "Stoa",
     // Same colors as the app's sidebar, so nothing flashes while the page loads.
-    backgroundColor: nativeTheme.shouldUseDarkColors ? "#1d1d20" : "#f7f7f8",
+    backgroundColor: nativeTheme.shouldUseDarkColors ? "#161f23" : "#f6f7f8",
     // macOS: no title bar. The traffic lights sit in the sidebar's top row; the web app leaves room
     // for them and marks its own drag regions (web/src/styles.css, "Desktop app").
     ...(mac ? { titleBarStyle: "hiddenInset" as const, trafficLightPosition: { x: 16, y: 16 } } : {}),
@@ -241,29 +258,76 @@ async function createWindow() {
 
 // ---- IPC from the setup screen (desktop/preload.cjs) ----
 
-ipcMain.handle("stoa:set-api-key", async (_e, raw: unknown) => {
-  const key = typeof raw === "string" ? raw.trim() : "";
-  if (!/^sk-ant-[\w-]{20,}$/.test(key)) return { ok: false, error: "This does not look like an Anthropic API key (it starts with sk-ant-)." };
-  const error = await validateApiKey(key);
-  if (error) return { ok: false, error };
-  writeApiKey(key);
-  await sendToServer({ type: "api-key", key }, "api-key-applied");
+const isSecretName = (v: unknown): v is SecretName => SECRET_NAMES.includes(v as SecretName);
+
+ipcMain.handle("stoa:set-secret", async (_e, name: unknown, raw: unknown) => {
+  if (!isSecretName(name)) return { ok: false, error: "Unknown setting." };
+  const value = typeof raw === "string" ? raw.trim() : "";
+  if (name === "anthropic") {
+    if (!/^sk-ant-[\w-]{20,}$/.test(value)) return { ok: false, error: "This does not look like an Anthropic API key (it starts with sk-ant-)." };
+    const error = await validateApiKey(value);
+    if (error) return { ok: false, error };
+  } else if (!value || value.length > 8192 || /\s/.test(value)) {
+    return { ok: false, error: "Paste the key or token on its own, with no spaces or line breaks." };
+  }
+  writeSecret(name, value);
+  await sendToServer({ type: "secret", name, value }, "secret-applied");
   return { ok: true };
 });
 
-ipcMain.handle("stoa:clear-api-key", async () => {
-  writeApiKey(null);
-  await sendToServer({ type: "api-key", key: null }, "api-key-applied");
+ipcMain.handle("stoa:clear-secret", async (_e, name: unknown) => {
+  if (!isSecretName(name)) return { ok: false };
+  writeSecret(name, null);
+  await sendToServer({ type: "secret", name, value: null }, "secret-applied");
   return { ok: true };
 });
 
-/** Whether a key is stored, and its last four characters so Settings can show which one. Never the key. */
-ipcMain.handle("stoa:api-key-info", () => {
-  const key = readApiKey();
-  return { set: !!key, last4: key ? key.slice(-4) : null };
+/** Which secrets are stored, and the last four characters of each, so Settings can show which one. Never the secret. */
+ipcMain.handle("stoa:secret-info", () => {
+  const out = {} as Record<SecretName, { set: boolean; last4: string | null }>;
+  for (const name of SECRET_NAMES) {
+    const v = readSecret(name);
+    out[name] = { set: !!v, last4: v && v.length > 12 ? v.slice(-4) : null };
+  }
+  return out;
+});
+
+/** Open a terminal that runs `claude`, so the learner can type /login. */
+ipcMain.handle("stoa:open-claude-login", async (_e, cliPath: unknown) => {
+  const bin = typeof cliPath === "string" && path.isAbsolute(cliPath) && path.basename(cliPath) === "claude" && fs.existsSync(cliPath) ? cliPath : "claude";
+  const q = (s: string) => `'${s.replace(/'/g, `'\\''`)}'`;
+  const script = path.join(app.getPath("temp"), "stoa-claude-login.command");
+  fs.writeFileSync(script, `#!/bin/sh\necho "Type /login and follow the steps. Then go back to Stoa."\necho\nexec ${q(bin)}\n`, { mode: 0o755 });
+  if (process.platform === "darwin") {
+    const err = await shell.openPath(script); // .command files open in Terminal
+    return err ? { ok: false, error: err } : { ok: true };
+  }
+  for (const [cmd, args] of [["x-terminal-emulator", ["-e", script]], ["gnome-terminal", ["--", script]], ["konsole", ["-e", script]], ["xterm", ["-e", script]]] as const) {
+    try {
+      const child = spawn(cmd, [...args], { detached: true, stdio: "ignore" });
+      const ok = await new Promise<boolean>((r) => { child.once("error", () => r(false)); child.once("spawn", () => r(true)); });
+      if (ok) { child.unref(); return { ok: true }; }
+    } catch { /* try the next terminal */ }
+  }
+  return { ok: false, error: "Stoa could not open a terminal." };
 });
 
 ipcMain.handle("stoa:open-logs", () => shell.openPath(LOG_DIR));
+
+// ---- Updates (desktop/updater.ts) ----
+
+const updater = createUpdater({
+  repo: process.env.STOA_UPDATE_REPO ?? "JoeEverest/stoa",
+  userData: USER_DATA,
+  getWindow: () => win,
+  quit: () => app.quit(), // before-quit stops the server and its agents first
+});
+ipcMain.handle("stoa:update-status", () => updater.status());
+ipcMain.handle("stoa:update-check", () => updater.check());
+ipcMain.handle("stoa:update-download", () => updater.download());
+ipcMain.handle("stoa:update-install", () => updater.install());
+ipcMain.handle("stoa:update-auto", (_e, on: unknown) => updater.setAuto(on !== false));
+ipcMain.handle("stoa:update-release-page", () => updater.openReleasePage());
 
 // ---- Lifecycle ----
 
@@ -273,6 +337,7 @@ app.whenReady().then(async () => {
   try {
     await startServer();
     await createWindow();
+    updater.start();
   } catch (err) {
     dialog.showErrorBox("Stoa could not start", `${err instanceof Error ? err.message : err}\n\nThe log is in ${LOG_DIR}.`);
     quitting = true;

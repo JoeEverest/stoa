@@ -232,6 +232,12 @@ button.option.is-wrong::before { box-shadow: inset 0 0 0 5px var(--bad); }
 .learn-video { position: relative; border-radius: var(--r-lg); overflow: hidden; background: var(--surface-2); border: 1px solid var(--line); animation: stoa-fade var(--t-enter) var(--ease-out) both; }
 .learn-video-player { width: 100%; aspect-ratio: 16 / 9; display: block; background: var(--surface-2); object-fit: contain; }
 .learn-video.is-started .learn-video-player { background: #000; }
+/* Video frames are rendered light. In dark mode the poster rests a little dimmer, so it does not
+   outshine the page, and comes up to full brightness on hover and once the video plays. */
+html:root[data-theme="dark"] .learn-video:not(.is-started) .learn-video-player { filter: brightness(0.82); transition: filter 200ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  html:root[data-theme="dark"] .learn-video:not(.is-started):hover .learn-video-player { filter: none; }
+}
 .learn-video-player { cursor: pointer; }
 
 /* The player's bar, under the picture (it never covers the drawing). */

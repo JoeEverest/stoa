@@ -146,11 +146,28 @@ the lesson frames and the bridge keep one origin, as in the browser version.
   The app ships without asar, because the agents read the plugin and run binaries from disk.
 - **PATH.** Read from a login shell at start, because apps started from the Dock or a menu do not
   get it.
-- **Claude access** (`server/setup.ts`). A Claude Code login is found by starting Claude Code
-  without a prompt and reading `accountInfo()` (no cost). Without a login, the learner gives an
-  API key in setup; the shell checks it, stores it with `safeStorage` and sends it to the server
-  over the utilityProcess port. The server puts it in `ANTHROPIC_API_KEY` for the agents only in
-  that case.
+- **Claude access** (`server/setup.ts`, `server/settings.ts`). Three connections: Anthropic (a
+  Claude Code login, found by starting Claude Code without a prompt and reading `accountInfo()`,
+  or an API key), a custom Anthropic-compatible URL, or Amazon Bedrock. Plain settings (provider,
+  URLs, region, models) are in `DATA_DIR/settings.json`. Secrets (the API key, a custom endpoint's
+  token, a Bedrock API key) are stored by the shell with `safeStorage` and sent to the server over
+  the utilityProcess port (`{ type: "secret" }`), which keeps them in memory. `providerEnv()` builds
+  each agent run's environment: for a custom URL it sets `ANTHROPIC_BASE_URL` with
+  `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`; for Bedrock `CLAUDE_CODE_USE_BEDROCK`,
+  `AWS_REGION`, `ANTHROPIC_BEDROCK_BASE_URL`, `AWS_PROFILE`, `AWS_BEARER_TOKEN_BEDROCK` or
+  `CLAUDE_CODE_SKIP_BEDROCK_AUTH`; and for both it points every model family
+  (`ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL`) at the chosen models, since a gateway may serve
+  only one. `POST /api/settings/test` sends one short prompt through the saved connection.
+- **Updates** (`desktop/updater.ts`, main process). Reads the latest published release from the
+  GitHub API, picks this computer's package by name, streams it to `<userData>/updates` while
+  hashing it, and keeps it only if the SHA-256 matches the asset's `digest`. On macOS it unpacks the
+  zip with `ditto` and checks the bundle's version; on install a detached shell script waits for
+  Stoa's PID to exit, renames the old bundle (or AppImage) aside, moves the new one in, removes the
+  old one (or puts it back if the move failed) and starts the new version. The window gets status
+  pushes on `stoa:update-status`. Not used: Squirrel.Mac, which needs a Developer ID signature.
+- **Claude Code CLI** (`server/claudecli.ts`). Setup looks for `claude` on PATH and in
+  `~/.local/bin`, and runs `curl -fsSL https://claude.ai/install.sh | bash` when it is missing. The
+  CLI is for signing in (the shell can open a terminal running it); the agents use the SDK's copy.
 - **Video tools** (`server/runtimes.ts`). Setup installs Python (python-build-standalone) with
   `kokoro-onnx` and `soundfile`, and static ffmpeg, from pinned files with SHA-256 checks. Then it
   runs HyperFrames itself to fetch Chrome, the Kokoro model and the whisper model into

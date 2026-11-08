@@ -4,7 +4,8 @@ import { marked } from "marked";
 import { api, useArrivals, usePoll, useThread, type Lesson, type Message, type Topic, type TopicState } from "./api";
 import * as I from "./icons";
 import { Setup } from "./Setup";
-import { SettingsButton } from "./Settings";
+import { SettingsPage } from "./Settings";
+import { RailUpdateNotice } from "./Updates";
 import { ACCEPT, AttachButton, FileChips, MaterialsList, fileProblem, sizeLabel, uploadChips, useDropFiles, useUploads } from "./Materials";
 
 // ---- Routing: #/ (new topic), #/t/<topic>, #/t/<topic>/<lesson-id | ref:reference/x.html> ----
@@ -17,7 +18,8 @@ function useHash() {
     return () => removeEventListener("hashchange", on);
   }, []);
   const parts = hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
-  return parts[0] === "t" ? { topicId: parts[1] ?? null, view: parts.slice(2).join("/") || null } : { topicId: null, view: null };
+  if (parts[0] === "settings") return { topicId: null, view: null, page: "settings" as const };
+  return parts[0] === "t" ? { topicId: parts[1] ?? null, view: parts.slice(2).join("/") || null, page: null } : { topicId: null, view: null, page: null };
 }
 const topicHref = (topicId: string, view?: string) =>
   `#/t/${encodeURIComponent(topicId)}${view ? `/${encodeURIComponent(view)}` : ""}`;
@@ -30,14 +32,28 @@ function useTheme() {
   const [pref, setPref] = useState<ThemePref>(() => {
     try { return (localStorage.getItem("stoa-theme") as ThemePref) || "light"; } catch { return "light"; }
   });
+  const applied = useRef(false);
   useEffect(() => {
     const media = matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
       const dark = pref === "dark" || (pref === "system" && media.matches);
-      document.documentElement.toggleAttribute("data-theme", dark);
-      if (dark) document.documentElement.setAttribute("data-theme", "dark");
+      const root = document.documentElement;
+      if ((root.getAttribute("data-theme") === "dark") === dark) return;
+      // Element transitions are off for the swap (styles.css, .theme-swap), so colors do not each fade
+      // on their own. Instead the whole window cross-fades once, unless motion is reduced.
+      const swap = () => {
+        root.classList.add("theme-swap");
+        root.toggleAttribute("data-theme", dark);
+        if (dark) root.setAttribute("data-theme", "dark");
+        void getComputedStyle(root).color; // flush styles before transitions come back
+        requestAnimationFrame(() => root.classList.remove("theme-swap"));
+      };
+      const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (applied.current && !calm && document.startViewTransition) document.startViewTransition(swap);
+      else swap();
     };
     apply();
+    applied.current = true;
     try { localStorage.setItem("stoa-theme", pref); } catch { /* private mode: theme still applies */ }
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
@@ -118,7 +134,7 @@ function useRailCollapsed() {
 const RailToggle = React.createContext<React.ReactNode>(null);
 
 function Main() {
-  const { topicId, view } = useHash();
+  const { topicId, view, page } = useHash();
   const topics = usePoll(api.topics, 4000, []);
   const [theme, setTheme] = useTheme();
   const [collapsed, toggleRail] = useRailCollapsed();
@@ -137,7 +153,7 @@ function Main() {
           <div className="brand"><I.Mark /><span>Stoa</span></div>
           {!collapsed && toggle}
         </div>
-        <a className="nav-item new-topic" href="#/" aria-label="New topic" title="New topic" aria-current={topicId ? undefined : "page"}><I.Plus /><span className="btn-label">New topic</span></a>
+        <a className="nav-item new-topic" href="#/" aria-label="New topic" title="New topic" aria-current={topicId || page ? undefined : "page"}><I.Plus /><span className="btn-label">New topic</span></a>
         <div className="rail-label" id="topics-label">Topics</div>
         <nav className="topic-list" aria-labelledby="topics-label">
           {topics.data?.length === 0 && <p className="rail-empty">Your topics appear here.</p>}
@@ -149,15 +165,19 @@ function Main() {
             </React.Fragment>
           ))}
         </nav>
+        <RailUpdateNotice />
         <div className="rail-foot">
           <ThemeSwitch value={theme} onChange={setTheme} />
           <ThemeCycle value={theme} onChange={setTheme} />
-          <SettingsButton />
+          <a className="rail-icon-btn" href="#/settings" aria-label="Settings" title="Settings"
+            aria-current={page === "settings" ? "page" : undefined}><I.Settings /></a>
         </div>
       </aside>
       <main className="main">
         <RailToggle.Provider value={collapsed ? toggle : null}>
-          {topicId
+          {page === "settings"
+            ? <SettingsPage theme={theme} onTheme={setTheme} toggle={collapsed ? toggle : null} />
+            : topicId
             ? <TopicView key={topicId} topicId={topicId} view={view} onChange={topics.refresh} />
             : <NewTopic onCreated={topics.refresh} topics={topics.data ?? null} />}
         </RailToggle.Provider>

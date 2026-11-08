@@ -3,42 +3,70 @@
  * Lessons get this file through /stoa/lesson.css (the server injects it).
  * Light is the default. Dark applies only when the user chooses it (data-theme on <html>).
  */
+/*
+ * The palette: five colors, each with a tonal ramp (50 lightest, 500 the color itself, 950 darkest).
+ *   https://coolors.co/palette/264653-2a9d8f-e9c46a-f4a261-e76f51
+ * Ramps mix the color with white (50-400) or black (600-950). Use the role tokens below in app
+ * code; reach for a ramp step only for a new role, and add it here as a role first.
+ * Lessons get the same five colors through shared/palette.css.
+ */
+:root {
+  --charcoal-50: #f2f4f5; --charcoal-100: #e1e5e7; --charcoal-200: #c2cbcf; --charcoal-300: #97a6ac; --charcoal-400: #5e7680;
+  --charcoal-500: #264653; --charcoal-600: #1f3944; --charcoal-700: #192e37; --charcoal-800: #13232a; --charcoal-900: #0e191e; --charcoal-950: #091114;
+  --teal-50: #f2f9f8; --teal-100: #e1f1ef; --teal-200: #c3e4e0; --teal-300: #99d0c9; --teal-400: #61b6ac;
+  --teal-500: #2a9d8f; --teal-600: #228175; --teal-700: #1c685e; --teal-800: #154e48; --teal-900: #0f3933; --teal-950: #0a2622;
+  --saffron-50: #fefbf6; --saffron-100: #fcf7ea; --saffron-200: #f9eed5; --saffron-300: #f4e3b7; --saffron-400: #efd391;
+  --saffron-500: #e9c46a; --saffron-600: #bfa157; --saffron-700: #9a8146; --saffron-800: #746235; --saffron-900: #544726; --saffron-950: #382f19;
+  --sandy-50: #fef9f6; --sandy-100: #fdf2e9; --sandy-200: #fce5d3; --sandy-300: #fad2b3; --sandy-400: #f7ba8a;
+  --sandy-500: #f4a261; --sandy-600: #c88550; --sandy-700: #a16b40; --sandy-800: #7a5130; --sandy-900: #583a23; --sandy-950: #3b2717;
+  --sienna-50: #fef6f5; --sienna-100: #fcebe7; --sienna-200: #f8d7ce; --sienna-300: #f3baab; --sienna-400: #ed947e;
+  --sienna-500: #e76f51; --sienna-600: #bd5b42; --sienna-700: #984935; --sienna-800: #743828; --sienna-900: #53281d; --sienna-950: #371b13;
+}
+
 :root {
   color-scheme: light;
 
-  /* Surfaces */
+  /* Surfaces: white paper, greys tinted toward charcoal */
   --bg: #ffffff;
-  --surface-2: #f7f7f8;        /* rails, tutor, quiet panels */
-  --surface-3: #eeeef0;        /* hover on surface-2, wells */
-  --line: #e6e6e9;
-  --line-strong: #d4d4d8;
+  --surface-2: #f6f7f8;        /* rails, tutor, quiet panels */
+  --surface-3: #eef0f1;        /* hover on surface-2, wells */
+  --line: #e5e9ea;
+  --line-strong: #d4dadd;
 
-  /* Ink ladder */
-  --ink-1: #0f0f11;
-  --ink-2: #3f4048;
-  --ink-3: #62636b;            /* secondary text, still AA on white and surface-2 */
-  --ink-4: #a1a1aa;            /* decoration only, never text */
+  /* Ink ladder (charcoal-tinted) */
+  --ink-1: #0f1c22;
+  --ink-2: #33454d;
+  --ink-3: #5a6b72;            /* secondary text, still AA on white, surface-2 and surface-3 */
+  --ink-4: #adb9be;            /* decoration only, never text */
 
-  /* Accent: primary actions, current selection, focus, progress */
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-ink: #1d4ed8;
-  --accent-soft: #eef3fe;
-  --accent-line: #c7d7fb;
+  /* Accent: primary actions and the current place in charcoal; teal for focus, selection and links */
+  --accent: var(--charcoal-500);
+  --accent-hover: var(--charcoal-700);
+  --accent-ink: var(--teal-700);
+  --accent-soft: var(--teal-50);
+  --accent-line: var(--teal-300);
   --on-accent: #ffffff;
+  /* Progress and "working" marks: meters, the current lesson segment, spinners in rows */
+  --progress: var(--teal-500);
+  /* Focus: rings and the border of a focused field */
+  --focus: var(--teal-500);
+  /* A warm highlight for new or notable things (a new lesson, a badge). Never for errors. */
+  --highlight: var(--saffron-500);
+  --highlight-soft: var(--saffron-100);
+  --highlight-ink: var(--saffron-950);
 
-  /* States */
-  --ok: #15803d;
-  --ok-soft: #effaf2;
-  --ok-line: #9fd8b1;
-  --ok-ink: #14532d;
-  --bad: #b91c1c;
-  --bad-soft: #fdf2f2;
-  --bad-line: #f1a9a9;
-  --bad-ink: #5c1515;
-  --warn: #a16207;
-  --warn-soft: #fef8e7;
-  --warn-ink: #4d3305;
+  /* States: right is teal, wrong is sienna, hint is saffron */
+  --ok: var(--teal-600);
+  --ok-soft: var(--teal-50);
+  --ok-line: var(--teal-300);
+  --ok-ink: var(--teal-800);
+  --bad: var(--sienna-700);
+  --bad-soft: var(--sienna-50);
+  --bad-line: var(--sienna-300);
+  --bad-ink: var(--sienna-900);
+  --warn: var(--saffron-800);
+  --warn-soft: var(--saffron-100);
+  --warn-ink: var(--saffron-950);
 
   /* Topic look: a topic may override these in library/topic.css. They default to the app accent.
      Used for lesson accents (callouts, step numbers, terms), never for UI state or the primary button. */
@@ -47,11 +75,11 @@
   --topic-ink: var(--accent-ink);
 
   /* Diagram palette (figures, charts, video posters). Not for UI state. */
-  --viz-1: #2563eb;
-  --viz-2: #e5484d;
-  --viz-3: #12a594;
-  --viz-4: #d97706;
-  --viz-5: #8e4ec6;
+  --viz-1: var(--teal-500);
+  --viz-2: var(--sienna-500);
+  --viz-3: var(--saffron-500);
+  --viz-4: var(--sandy-500);
+  --viz-5: var(--charcoal-500);
 
   /* Type */
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Noto Sans", sans-serif;
@@ -73,10 +101,10 @@
   --r-sm: 6px;
   --r-md: 8px;
   --r-lg: 12px;
-  --shadow-1: 0 1px 2px rgba(15, 15, 17, 0.05);
-  --shadow-2: 0 4px 12px rgba(15, 15, 17, 0.08), 0 1px 3px rgba(15, 15, 17, 0.06);
-  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
-  --field-ring: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  --shadow-1: 0 1px 2px rgba(9, 17, 20, 0.05);
+  --shadow-2: 0 4px 12px rgba(9, 17, 20, 0.08), 0 1px 3px rgba(9, 17, 20, 0.06);
+  --ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus);
+  --field-ring: 0 0 0 3px color-mix(in srgb, var(--teal-500) 28%, transparent);
 
   /* Motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -89,38 +117,46 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #161618;
-  --surface-2: #1d1d20;
-  --surface-3: #26262a;
-  --line: #2e2e33;
-  --line-strong: #3d3d43;
-  --ink-1: #ededef;
-  --ink-2: #c4c4c9;
-  --ink-3: #9b9ba3;
-  --ink-4: #66666e;
-  --accent: #4f86f7;
-  --accent-hover: #6a98f8;
-  --accent-ink: #8fb1fa;
-  --accent-soft: #1a2540;
-  --accent-line: #2c406e;
-  --on-accent: #0b1020;
-  --ok: #4cc27a;
-  --ok-soft: #12261b;
-  --ok-line: #23573a;
-  --ok-ink: #a6e3bd;
-  --bad: #f2756f;
-  --bad-soft: #2c1615;
-  --bad-line: #6a2a27;
-  --bad-ink: #f6c2bf;
-  --warn: #e0a83a;
-  --warn-soft: #2a2110;
-  --warn-ink: #f0d8a6;
-  --viz-1: #6a98f8;
-  --viz-2: #f2756f;
-  --viz-3: #3cc9b4;
-  --viz-4: #f0a43a;
-  --viz-5: #b38ae0;
+  /* Surfaces: near-black with a charcoal cast */
+  /* Contrast on bg: line-strong 3.4:1 (control borders need 3:1), ink-3 8.2:1, ink-2 12.5:1 */
+  --bg: #0f1518;
+  --surface-2: #161f23;
+  --surface-3: #212c32;
+  --line: #2b383f;
+  --line-strong: #5b6d75;
+  --ink-1: #eef3f5;
+  --ink-2: #ccd6da;
+  --ink-3: #a0b0b7;
+  --ink-4: #5b6d75;
+  /* Charcoal disappears on a dark page: teal carries actions and the current place */
+  --accent: var(--teal-500);
+  --accent-hover: var(--teal-400);
+  --accent-ink: var(--teal-300);
+  --accent-soft: color-mix(in srgb, var(--teal-500) 14%, var(--bg));
+  --accent-line: color-mix(in srgb, var(--teal-500) 45%, var(--bg));
+  --on-accent: #000000;
+  --progress: var(--teal-400);
+  --focus: var(--teal-500);
+  --highlight: var(--saffron-500);
+  --highlight-soft: color-mix(in srgb, var(--saffron-500) 14%, var(--bg));
+  --highlight-ink: var(--saffron-300);
+  --ok: var(--teal-400);
+  --ok-soft: color-mix(in srgb, var(--teal-500) 14%, var(--bg));
+  --ok-line: color-mix(in srgb, var(--teal-500) 45%, var(--bg));
+  --ok-ink: var(--teal-200);
+  --bad: var(--sienna-400);
+  --bad-soft: color-mix(in srgb, var(--sienna-500) 14%, var(--bg));
+  --bad-line: color-mix(in srgb, var(--sienna-500) 45%, var(--bg));
+  --bad-ink: var(--sienna-200);
+  --warn: var(--saffron-500);
+  --warn-soft: color-mix(in srgb, var(--saffron-500) 12%, var(--bg));
+  --warn-ink: var(--saffron-300);
+  --viz-1: var(--teal-400);
+  --viz-2: var(--sienna-400);
+  --viz-3: var(--saffron-500);
+  --viz-4: var(--sandy-500);
+  --viz-5: var(--charcoal-200);
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-2: 0 6px 16px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
-  --field-ring: 0 0 0 3px rgba(79, 134, 247, 0.3);
+  --field-ring: 0 0 0 3px color-mix(in srgb, var(--teal-500) 35%, transparent);
 }

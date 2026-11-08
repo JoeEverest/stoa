@@ -10,7 +10,9 @@ import { APP_ROOT, WEB_DIST, resolveInTopic, topicDir } from "./paths.ts";
 import { announceUploads, requestNextLesson, requestVideoRemake, sendIntakeMessage, sendTutorMessage, stopTopicRuns, stopTopicRunsAndWait } from "./runner.ts";
 import { deleteAgentSessions, killProcessesIn, removeFolder } from "./cleanup.ts";
 import { publishStrandedLessons } from "./mcp.ts";
-import { DESKTOP, checkClaude, setApiKey, setupState, startToolInstall } from "./setup.ts";
+import { DESKTOP, applySecret, checkClaude, settingsChanged, setupState, startCliInstall, startToolInstall, testConnection } from "./setup.ts";
+import { publicSettings, saveSettings, type SecretName } from "./settings.ts";
+import { cliStatus } from "./claudecli.ts";
 import { writeShims } from "./runtimes.ts";
 import { UploadError, checkName, deleteUpload, saveUpload } from "./uploads.ts";
 
@@ -354,6 +356,22 @@ api.post("/setup/claude/check", async (c) => {
   return c.json(await setupState());
 });
 api.post("/setup/tools/install", (c) => (DESKTOP ? c.json(startToolInstall()) : c.notFound()));
+api.get("/setup/cli", async (c) => (DESKTOP ? c.json(await cliStatus(c.req.query("force") === "1")) : c.notFound()));
+api.post("/setup/cli/install", async (c) => (DESKTOP ? c.json(await startCliInstall()) : c.notFound()));
+
+// ---- Settings (connection and models) ----
+
+api.get("/settings", (c) => c.json({ ...publicSettings(), desktop: DESKTOP }));
+api.put("/settings", async (c) => {
+  const body = await c.req.json().catch(() => null);
+  // The connection is the desktop app's to change; a web server keeps the one in its environment.
+  if (!DESKTOP && body && typeof body === "object") { delete body.provider; delete body.custom; delete body.bedrock; }
+  const error = saveSettings(body);
+  if (error) return c.json({ error }, 400);
+  settingsChanged();
+  return c.json({ ...publicSettings(), desktop: DESKTOP });
+});
+api.post("/settings/test", async (c) => c.json(await testConnection()));
 
 app.route("/api", api);
 
@@ -377,9 +395,9 @@ const server = serve({ fetch: app.fetch, port, hostname: process.env.HOST ?? "12
 // Messages from the desktop shell (Electron utilityProcess).
 process.parentPort?.on("message", async (e: { data: any }) => {
   const msg = e.data;
-  if (msg?.type === "api-key") {
-    await setApiKey(msg.key ?? null);
-    process.parentPort?.postMessage({ type: "api-key-applied" });
+  if (msg?.type === "secret" && ["anthropic", "custom", "bedrock"].includes(msg.name)) {
+    await applySecret(msg.name as SecretName, msg.value ?? null);
+    process.parentPort?.postMessage({ type: "secret-applied", name: msg.name });
   } else if (msg?.type === "shutdown") {
     await shutdown();
   }

@@ -29,13 +29,29 @@ export type SetupStep = {
   bytes: number; total: number | null; error: string | null;
 };
 export type ClaudeAccess = {
-  mode: "login" | "apiKey" | null;
+  mode: "login" | "apiKey" | "custom" | "bedrock" | null;
   login: { email: string | null; plan: string | null; provider: string | null } | null;
 };
+export type CliStatus = {
+  installed: boolean; path: string | null; version: string | null;
+  installing: boolean; error: string | null; log: string; supported: boolean;
+};
+export type Provider = "anthropic" | "custom" | "bedrock";
+export type Settings = {
+  provider: Provider; model: string; tutorModel: string; fastModel: string;
+  custom: { baseUrl: string; auth: "x-api-key" | "bearer" | "none" };
+  bedrock: { region: string; baseUrl: string; auth: "profile" | "apiKey" | "none"; profile: string };
+};
+export type SettingsState = {
+  settings: Settings; desktop: boolean; defaultModel: string;
+  secrets: Record<Provider, boolean>;
+  effective: { model: string; tutorModel: string };
+};
+export type ConnectionTest = { ok: boolean; model: string; ms: number; reply?: string; error?: string };
 export type SetupState =
   | { desktop: false; ready: true }
   | {
-      desktop: true; ready: boolean; claude: ClaudeAccess;
+      desktop: true; ready: boolean; claude: ClaudeAccess; cli: CliStatus;
       tools: { managed: false } | {
         managed: true; supported: boolean; platform: string; whisper: boolean; ready: boolean;
         installing: boolean; error: string | null; steps: SetupStep[];
@@ -57,6 +73,11 @@ export const api = {
   setup: () => req<SetupState>("GET", "/api/setup"),
   checkClaude: () => req<SetupState>("POST", "/api/setup/claude/check"),
   installTools: () => req("POST", "/api/setup/tools/install"),
+  cli: (force = false) => req<CliStatus>("GET", `/api/setup/cli${force ? "?force=1" : ""}`),
+  installCli: () => req<CliStatus>("POST", "/api/setup/cli/install"),
+  settings: () => req<SettingsState>("GET", "/api/settings"),
+  saveSettings: (s: Partial<Settings>) => req<SettingsState>("PUT", "/api/settings", s),
+  testConnection: () => req<ConnectionTest>("POST", "/api/settings/test"),
   topics: () => req<Topic[]>("GET", "/api/topics"),
   createTopic: (message: string, start = true) => req<{ id: string }>("POST", "/api/topics", { message, start }),
   startTopic: (id: string) => req<{ started: boolean }>("POST", `/api/topics/${id}/start`),

@@ -50,21 +50,43 @@ More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Design system: [DESIG
 Stoa also runs as a desktop app. It contains the server, the agents and HyperFrames, so you do
 not install Node or any video tools yourself.
 
-On first launch, a setup screen does two things:
+On first launch, a setup screen does three things:
 
-1. **Claude.** Stoa uses the Claude Code login on this computer if it finds one. If not, you
-   paste an API key from the Claude Console; Stoa checks it with Anthropic and stores it
-   encrypted (macOS Keychain, or the Linux keyring through Electron's `safeStorage`). Later, **Settings**
-   (the sliders button at the bottom of the sidebar) lets you replace or remove the key, or switch
-   between the key and your Claude login.
-2. **Video tools.** Stoa downloads Python with the Kokoro voice, ffmpeg, a headless Chrome and the
+1. **Claude Code.** If the `claude` command is not on this computer, Stoa installs it with the
+   official installer (`curl -fsSL https://claude.ai/install.sh | bash`). You use it to sign in to
+   your Claude account; Stoa's agents run on the copy inside the Agent SDK.
+2. **Claude.** Choose how Stoa reaches Claude:
+   - **Anthropic**: the Claude Code login on this computer (a **Sign in with Claude** button opens a
+     terminal for `/login`), or an API key from the Claude Console, which Stoa checks with Anthropic.
+   - **Custom URL**: any Anthropic-compatible endpoint (LiteLLM or another gateway, a company
+     proxy). Give the URL, how to send the key (`x-api-key`, Bearer token or none) and the model ID.
+   - **Amazon Bedrock**: an AWS region, an optional custom endpoint (VPC endpoint or gateway), how
+     to sign in (an AWS profile, a Bedrock API key, or the endpoint handles it) and the model ID or
+     inference profile.
+
+   Keys and tokens are stored encrypted (macOS Keychain, or the Linux keyring through Electron's
+   `safeStorage`). **Test connection** sends one short message through the saved settings.
+3. **Video tools.** Stoa downloads Python with the Kokoro voice, ffmpeg, a headless Chrome and the
    whisper speech-timing model, about 1 GB, into its app-data folder. Every file is pinned to a
    version, and the ones Stoa downloads itself are checked against a SHA-256. `whisper-cli` ships
    inside the app. Videos are part of every lesson, so setup finishes only when the tools work.
 
+**Settings** (the sliders button at the bottom of the sidebar, or `#/settings`) changes the
+connection and the models later: the teacher (Athena), the tutor, and for a custom URL or Bedrock
+a cheaper background model. Changes apply to new work. The browser version shows Settings too, with
+the models only; its connection comes from the server's environment.
+
 Data lives in the OS app-data folder (`~/Library/Application Support/Stoa` on macOS,
 `~/.config/Stoa` on Linux): `data/` (database and topics), `runtimes/` (video tools) and
 `logs/server.log`.
+
+**Updates.** Stoa checks GitHub for a new release at launch and every six hours, downloads it in
+the background (Settings → Updates turns that off), and checks the file against the SHA-256 digest
+GitHub records for it. **Restart to update** closes Stoa, swaps in the new version and opens it
+again; your data folder is not touched. This works for the macOS app in a folder you can write to
+(normally Applications) and for the Linux AppImage. A `.deb` install downloads the new package and
+opens it in your software installer. Stoa does not use Squirrel.Mac (electron-updater), because that
+requires an app signed with an Apple Developer ID.
 
 Build it yourself:
 
@@ -80,6 +102,12 @@ npm run dist            # package: release/*.dmg + .zip (macOS) or .AppImage + .
 each package on its own OS and CPU; `.github/workflows/desktop.yml` does this for macOS arm64/x64
 and Linux x64/arm64. macOS packages are signed and notarized when the signing secrets are set.
 Windows is not supported yet.
+
+To ship a release: bump `version` in `package.json`, commit, and push a matching tag (`v1.1.0`). CI
+builds every package and collects them, with `SHA256SUMS.txt`, into a draft GitHub release. Edit the
+notes, then publish the draft; installed copies of Stoa offer the update within six hours. Package
+names must keep the arch (`Stoa-<version>-<arch>-mac.zip`, `Stoa-<version>-<arch>.AppImage`),
+because the updater picks its file by name.
 
 ## Server setup (browser or Docker)
 
@@ -137,13 +165,14 @@ saved sessions), open the **⋯** menu in the topic header and choose **Delete t
 |---|---|---|
 | `DATA_DIR` | `./data` | Database and topic workspaces |
 | `PORT` / `HOST` | `3210` / `127.0.0.1` | Server address |
-| `LEARN_MODEL` | `claude-opus-5-5` | Athena's model |
-| `TUTOR_MODEL` | same as `LEARN_MODEL` | Tutor model |
+| `LEARN_MODEL` | `claude-opus-5-5` | Athena's model (a model chosen in Settings wins) |
+| `TUTOR_MODEL` | same as `LEARN_MODEL` | Tutor model (a model chosen in Settings wins) |
 | `ANTHROPIC_API_KEY` | (none) | Claude access, if you do not use a Claude Code login |
+| `ANTHROPIC_BASE_URL`, `CLAUDE_CODE_USE_BEDROCK`, ... | (none) | Any Claude Code connection variable; the agents inherit them |
 | `CHROME_PATH` | (found automatically) | Chrome or Chromium that Athena uses to check figures |
 
 The desktop app sets these itself. For testing, `STOA_USER_DATA=/some/folder` gives it a separate
-profile (data, video tools and API key).
+profile (data, video tools, keys and settings).
 
 ## Costs and safety
 
@@ -168,7 +197,7 @@ docker run -d --name stoa -p 3210:3210 -v stoa-data:/data -e ANTHROPIC_API_KEY=s
 ```
 server/         Hono server: API, agent runner, MCP tools for Athena and the tutor, lesson bridge,
                 desktop setup (Claude access, video tool installer)
-desktop/        Electron shell: starts the server, window, API key storage
+desktop/        Electron shell: starts the server, window, encrypted key storage
 web/            React app (Vite)
 shared/         Design tokens and the lesson kit, shared by the app and the lessons
 agent/plugin/   Claude Code plugin: skills (teach, lesson-video; HyperFrames and anatomy after sync), lesson-editor agent
