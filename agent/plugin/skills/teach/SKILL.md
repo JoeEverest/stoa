@@ -103,12 +103,14 @@ Each build run produces the next lesson. Steps:
    lesson: a new lecture or syllabus can change what comes next.
 2. **Grade and record.** Grade open answers (`correct: null`) yourself. Write learning records
    only from evidence: correct answers, worked exercises, a misconception that was corrected.
-   Coverage is not learning. Copy new `preference` notes into `NOTES.md`.
+   Coverage is not learning. Copy new `preference` notes into `NOTES.md`. Grade the review
+   items too, and record each result ("Review of earlier lessons").
 3. **Choose the lesson.** Pick the one thing in the learner's zone of proximal development that
    moves them toward the mission. Unresolved tutor questions and misconceptions get addressed
    first, as a short recap or a targeted drill, or as the lesson itself. If the learner has not
    done the last lesson yet, still build the next one, and include a short check on the
-   previous lesson.
+   previous lesson. From lesson 2 on, also choose the two or three ideas this lesson tests
+   again ("Review of earlier lessons").
 4. **Research.** Start from the learner's materials if there are any, then find and cite trusted
    sources for what they do not cover. Update `RESOURCES.md`.
 5. **Write the text lesson** and any reference documents, following [WRITING.md](./WRITING.md).
@@ -124,7 +126,7 @@ Each build run produces the next lesson. Steps:
    that is not published is invisible to them. Then call `publish_video`, or `video_failed` with
    the reason.
 7. **Hand off.** Update the working notes in `NOTES.md`: what you built, which lesson notes you
-   handled, what evidence is still missing, what you plan next.
+   handled, what evidence is still missing, what you plan next, and the review list.
 
 Use `set_status` at every step and during long work.
 
@@ -199,6 +201,41 @@ Rules:
   learner's work"). A learner who leaves to read a reference and comes back, or reopens the lesson
   next week, must see their checked answers and feedback.
 - Guard calls so the page still works if `window.learn` is missing (opened as a file).
+
+### Review of earlier lessons
+
+A correct answer directly after the explanation shows that the learner can follow. It does not
+show that they will remember. So every lesson from lesson 2 on tests two or three ideas from
+earlier lessons again, before it teaches anything new.
+
+- **What to test.** Choose from the review list in `NOTES.md`, in this order: an idea this
+  lesson builds on, an idea the learner got wrong the last time, then the idea that has waited
+  longest. Test an idea in the lesson after the one that taught it, again about three lessons
+  later, then at longer gaps. An idea the learner gets wrong goes back to the next lesson.
+- **How to ask.** Write a new example, not the earlier question with other numbers. Give no
+  hint, and do not explain the idea again first: the learner must recall it. One short item for
+  each idea. The full review takes the learner less than five minutes.
+- **Where.** Put the review items together in one section after the lede and the video area,
+  before the first new section, with a plain heading ("Questions from earlier lessons") and one
+  sentence that says why they are there. They are normal exercises (`.exercise`), with the count
+  label "Review 1 of 2".
+- **Feedback.** When an answer is wrong, point to the step that went wrong and link to the
+  lesson that taught the idea (`0002-x.html`). Let the learner try again.
+- **Submit.** Use an `itemId` that starts with `review-`, and put the lesson that taught the
+  idea in `meta`: `meta: { reviews: "0002-split-the-velocity", attempts: 1 }`. Submit the first
+  attempt even when it is wrong; the first attempt is the evidence.
+- **Record.** In the next build, read the review results before you choose the lesson.
+  - Correct at the first attempt: add the result to the Evidence of the learning record for
+    that idea ("recalled without help in lesson 5"). This is stronger evidence than the
+    original answer.
+  - Wrong at the first attempt: the learner does not hold this idea yet. Write a new learning
+    record that says what they got wrong, mark the earlier record
+    `Status: superseded by LR-NNNN`, and treat it as a misconception in step 3.
+- **The review list.** Keep a `## Review` section in the working notes of `NOTES.md`, one line
+  for each idea: the idea, the lesson that taught it, the lesson that last tested it, the
+  result, and the lesson that tests it next. Add an idea when a lesson teaches it. If the topic
+  has lessons but no list yet, make the list from the lessons and the learning records. An idea the
+  learner recalled three times at growing gaps needs no more review; mark it "kept".
 
 ## Figures
 

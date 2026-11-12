@@ -33,14 +33,17 @@ what is taught, or change how the page works.
   in a normal sentence in the lede. Remove a callout that only did this.
 - No metaphors or figures of speech ("share one clock", "rest on"), no overclaims ("every
   program you write"). Write the literal fact.
-- **ASD-STE100 Simplified Technical English** (WRITING.md, "Language"): active voice, no `-ing`
-  verbs or adjectives, no contractions, not more than 20 words in an instruction and 25 in a
-  description, one meaning per word, articles kept. Technical terms the lesson teaches may break
-  these rules. Fix each STE flag that the readability script prints, or leave it only if it is a
-  technical term.
+- **Plain, natural English** (WRITING.md, "Language"). The page must not read like a manual. Use
+  contractions where a teacher would say them ("it's", "don't", "that's"), ordinary words ("once",
+  not "one time"), and the tense that fits. Join a short sentence to the reason that follows it
+  ("so", "because", "which means"), and break up any run of four or more short sentences of the
+  same shape. Replace a phrase the page uses again and again to open sections or steps. Read each
+  line the readability script flags aloud, and fix the ones that are stiff; a full form that
+  carries stress may stay.
 - The first sentence of the page and of each section teaches something. Remove hooks and hype.
 - A specific example comes before the general rule.
-- One idea per sentence. Split long sentences. Prefer common words when they are exact.
+- One idea per sentence, with its reason. Split a sentence that needs a second reading. Prefer
+  common words when they are exact.
 - Each term has one name. When the page uses two names for one thing ("numerator" and "top
   number", "sideways speed" and "horizontal velocity"), choose the glossary's name, or the first
   name the page defined, and use it everywhere. Keep one sentence that links the two names if
@@ -78,6 +81,6 @@ or when further cuts would remove meaning. Technical terms the learner must lear
 
 ## Report
 
-Reply with at most 10 lines, in STE: the grade and the STE flag count before and after, the terms you made consistent, any
+Reply with at most 10 lines: the grade and the count of stiff flags before and after, the terms you made consistent, any
 facts or script feedback strings you think are wrong, and anything you could not fix without
 changing what the lesson teaches.

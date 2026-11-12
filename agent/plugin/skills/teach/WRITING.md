@@ -4,48 +4,55 @@ Write the way a good teacher talks to one student sitting next to them: plain, c
 specific. You are explaining something to a person, not selling it to them. If a sentence would
 sound odd said out loud across a desk, or would fit on a poster or a landing page, rewrite it.
 
-## Language: ASD-STE100 Simplified Technical English
+## Language: plain, natural English
 
-Write all learner-facing text in Simplified Technical English (STE, the ASD-STE100 standard):
-lessons, reference pages, exercise prompts and feedback lines, captions, `set_status` lines, video
-narration and your intake chat. STE keeps one meaning per word and short, direct sentences, so a
-learner never has to guess what a sentence means. Write it as a teacher who talks to one student,
-not as a manual.
+Write all learner-facing text (lessons, reference pages, exercise prompts and feedback lines,
+captions, `set_status` lines, video narration and your intake chat) in the English a good teacher
+uses when they explain something to one student. Plain and natural are both required. Plain
+without natural reads like a manual: "That is too big. The pointer moves in. Do not use the map."
+Natural without plain reads like an essay.
 
-Words:
+The test for every sentence: say it out loud. If you would not say it that way to a student
+across a desk, rewrite it until you would.
 
-- Use common words that have one clear meaning, and use each word with one meaning and one part
-  of speech only. For example, use "show" (verb) and not "display"; use "start" and not
-  "commence"; use "use" and not "utilize" or "leverage".
-- Use one word for one thing. Never a synonym for variety (see "Explaining" below).
-- **Technical terms are allowed when the lesson needs them:** the subject's own terms (velocity,
-  hypotenuse, numerator), code identifiers, units, formulas, product and library names, and
-  technical verbs of the field (compile, render, solder). Define each one in one sentence the
-  first time, then use it exactly. These terms may break the other STE rules.
-- No idioms, metaphors, slang, humour or figures of speech.
+Natural:
 
-Sentences:
+- **Use contractions** where a person would: "it's", "don't", "can't", "that's", "we've",
+  "you'll". Keep the full form only for stress ("Do not skip this step.").
+- **Use the tense and the verb form that fits.** "The ball is falling", "we've already read
+  those", "once you've stored it" are all fine. Do not bend a sentence to avoid an `-ing` word.
+- **Use the ordinary word.** "once" and "twice", not "one time" and "two times"; "smallest to
+  largest", not "from small to large"; "drop it" or "rule it out", not "it goes out".
+- **Vary the sentences.** Mix short ones with longer ones that carry a reason. Join two short
+  sentences when the second one explains the first: "That's too big, so the right pointer moves
+  in." Five short sentences of the same shape in a row sound like a machine.
+- **Connect the ideas** the way speech does: "so", "but", "because", "which means", "notice
+  that", "here's the catch", "remember". These are how a listener follows the reasoning.
+- **Do not reuse a stock phrase.** If every section, lesson or video opens or turns with the same
+  words ("Here is...", "Now let's see...", "Now count the work."), change them. Say what this
+  step is about in words that belong to this step.
 
-- Active voice: "Gravity changes the upward speed", not "The upward speed is changed by gravity".
-- Not more than 20 words in an instruction ("Type your answer in the box."). Not more than 25 words
-  in a description.
-- One instruction in one sentence. Start an instruction with the verb.
-- Simple present, simple past or simple future tense only.
-- No `-ing` form as a verb or an adjective ("the ball is falling" becomes "the ball falls"; "the
-  falling ball" becomes "the ball that falls"). An `-ing` word is allowed only inside a technical
-  name (`string`, "ray tracing") or as a noun that the subject requires.
-- No contractions: "do not", "it is", "you will".
-- Keep the articles "a", "an" and "the". Do not put more than three nouns together.
+Plain:
 
-Paragraphs:
-
-- One topic in one paragraph. The most important information first.
+- Choose the common word when it is exact: "use", not "utilize" or "leverage"; "start", not
+  "commence"; "show", not "display".
+- One name for one thing. Never a synonym for variety (see "Explaining" below).
+- **Technical terms are welcome when the lesson needs them:** the subject's own terms (velocity,
+  hypotenuse, numerator), code identifiers, units, formulas, product and library names. Define
+  each one in one sentence the first time, then use it exactly.
+- Prefer the active voice, and put the actor first: "Gravity changes the upward speed". Use the
+  passive when the actor does not matter ("the array is sorted").
+- A sentence that needs a second reading is too long or does too much. Split it. There is no
+  word limit: a 30-word sentence that flows is better than three fragments.
+- An everyday phrase that every reader knows is fine ("keep track of", "runs out of"). Do not use
+  an idiom, a joke or a metaphor that a learner must decode, or that stands in for the fact.
+- One instruction per sentence, and start it with the verb: "Type your answer in the box."
 - A numbered list for steps in a sequence; a bulleted list for items that have no order.
-- Put a warning before the step that needs it, and write it as a command ("Set your calculator
-  to degrees before you start.").
+- Put a warning before the step that needs it ("Set your calculator to degrees before you
+  start.").
 
-Accuracy is above compliance. Do not remove a caveat or a necessary detail to obey a word limit:
-write another sentence instead.
+Accuracy comes first. Never drop a caveat or a needed detail to make a sentence shorter or
+smoother: write another sentence.
 
 ## Talking, not selling
 
@@ -64,11 +71,11 @@ And an opening from a real lesson, with what a teacher would actually say:
 > **Why this matters for your mission.** Every trajectory program you write will rest on two
 > lines.
 
-> **How a thrown ball moves.** When you throw a ball, it moves sideways and up and down at the
-> same time. You can solve these as two separate problems. Sideways, the ball keeps the same
-> speed for all of its flight. Up and down, it moves like a ball that you throw straight up: it
-> slows, stops at the top, and falls back. When you know both motions, you know the position of
-> the ball at each moment. Your program will draw these positions.
+> **How a thrown ball moves.** When you throw a ball, it's moving sideways and up and down at the
+> same time, and you can treat those as two separate problems. Sideways, nothing changes: the
+> ball keeps the same speed for the whole flight. Up and down, it behaves exactly like a ball
+> thrown straight up. It slows, stops at the top and falls back. Once you know both motions, you
+> know where the ball is at every moment, and those are the positions your program will draw.
 
 Signs that a page reads like marketing copy. Remove every one:
 
@@ -88,9 +95,9 @@ Signs that it reads like a person talking. Use them:
 - Address the learner as "you". Use "Athena" when the page refers to the teacher.
 - Say why a step comes next, as you would say it out loud: "The sideways part is easy. The up
   and down part needs more work."
-- Answer the question that the learner will ask next: "Why ½? The speed decreases at a constant
-  rate. Thus the average speed is halfway between the first speed and the last speed."
-- Say what is difficult: "Many learners make an error at this step the first time."
+- Answer the question that the learner will ask next: "Why ½? The speed drops at a steady rate,
+  so the average speed is halfway between where it started and where it ended."
+- Say what is difficult: "Most people get this step wrong the first time."
 
 [LESSON-EXAMPLE.html](./LESSON-EXAMPLE.html) is the model for tone as well as for markup: read
 its prose before you write.
@@ -108,7 +115,8 @@ its prose before you write.
   once that they are the same ("the top number, called the numerator"), then use one of them.
   Add the term to `GLOSSARY.md` and reuse its wording.
 - **Use an analogy only if it maps cleanly,** and say where it stops working.
-- **Short sentences, one idea each.**
+- **One idea per sentence,** with its reason attached when it has one. Short is good; choppy is
+  not (see "Language").
 
 ## Titles and headings
 
@@ -164,11 +172,14 @@ node <teach skill directory>/scripts/readability.mjs lessons/0002-split-the-velo
 ```
 
 It reads only the prose inside `<main>` (it skips scripts, styles, SVG, code and formulas),
-lists the hardest sentences, and lists possible STE problems: sentences over 25 words, `-ing`
-words, passive voice and contractions. Some flags are technical terms that may stay; fix the rest. A score more than one grade above the target means the prose needs
-another edit. The score is a check, not the goal: technical terms raise it, and a page can score
-well and still explain badly. It does not see teaser titles, metaphors or overclaims at all: check
-those yourself against the lists above.
+lists the hardest sentences, and lists places where the prose may sound stiff: full forms where a
+contraction is natural ("do not", "that is"), manual wording ("one time", "thus"), sentences over
+35 words, and runs of four or more very short sentences. It also works on a plain text file, such
+as a video's `script.txt`. A flag is a place to read aloud, not an error: keep a full form that
+carries stress. A score more than one grade above the target means the prose needs another edit.
+The score is a check, not the goal: technical terms raise it, and a page can score well and still
+explain badly. It does not see teaser titles, metaphors or overclaims at all: check those
+yourself against the lists above.
 
 ## The editing pass
 

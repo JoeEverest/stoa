@@ -113,14 +113,32 @@ the visual for every line at the same time in `storyboard.md` (what is on screen
    the learner answers in their head ("Target ten, array three, five, seven: what is in the map
    when you find the pair?"), pause, and answer it. Then one line on what the lesson asks next.
 
+The shape is what the video does, not what it says. The quoted lines above are examples of a
+move, never wording to reuse, and the learner must not hear the steps announced ("Here is the
+idea in one sentence.", "Now the trap.", "Now check yourself."). Each video finds its own words
+for each move. Before you write, read the scripts of this topic's earlier videos
+(`videos/*/script.txt`) and do not open, turn or close with a phrase they already used.
+
 ### Writing for the ear
 
 - Talk to one learner: "you", "let's", real questions. Give reasons: "because", "so", "that
   means". A line that states a fact with no reason and no link to the screen is a reciting line;
   give it its reason or cut it.
-- Write the narration in ASD-STE100 Simplified Technical English, as the teach skill's
-  `WRITING.md` describes ("Language"): short sentences, simple words. Technical terms may break
-  the rules. Short sentences are for clarity, not a reason to drop the reasoning.
+- **Write speech, not text.** The narration follows the teach skill's `WRITING.md`
+  ("Language"), and speech needs it even more than a page does. Use contractions everywhere a
+  person would ("that's too big", "we can't use a map here", "it's already in there"). A script
+  with "that is", "do not" and "cannot" in every other line sounds like a machine.
+- **Let sentences run when the thought runs.** Join a step to its reason: "Two plus fifteen is
+  seventeen, which is one too many, so something has to go." Then a short line lands: "It's the
+  fifteen." Four or more short sentences of the same shape in a row is a list, not a teacher.
+- **Do not read the screen.** The learner can see "5 + 2 = 7". Say what to notice about it: which
+  number matters, what just changed, what is about to go wrong. In a stretch of repeated steps,
+  speak the first one or two in full, then talk over the rest ("the same thing happens for nine,
+  four and seven: no partner yet, so in they go").
+- **React like a person.** A teacher says "good", "not quite", "hang on", "notice something
+  odd?", "that's a lot of work for six numbers". Use these where they are true. No hype.
+- **Refer to what the learner saw, not to how the video is built.** Never say "chapter",
+  "scene", "section" or "slide": say "a minute ago" or "back when we had no negative numbers".
 - Follow `WRITING.md`: the first line teaches something (handing over the problem counts; "get
   ready for" does not), a specific example before the rule, things at their real size, no hype.
 - Every name must be clear when *heard*. Read each line aloud: "seen" sounds like "scene", so
@@ -139,9 +157,11 @@ not in the video.
 
 Give `script.txt` and `storyboard.md` to the `learn:video-script-editor` subagent with the lesson
 file path. Fix every structural problem it reports (it edits wording itself, but the teaching
-shape is yours). Do not start the voiceover until it passes. After the voiceover, read the
-whisper transcript once *as the learner*: if any stretch is a list of facts, rewrite those
-lines and regenerate only them.
+shape is yours). Before you send it, run `node <teach skill directory>/scripts/readability.mjs script.txt` and
+read every line it flags aloud; most "full form" and "short sentences in a row" flags in a script
+are real. Do not start the voiceover until the editor passes it. After the voiceover, read the
+whisper transcript once *as the learner*: if any stretch is a list of facts, or sounds like
+something nobody would say, rewrite those lines and regenerate only them.
 
 ## 3. Voiceover
 

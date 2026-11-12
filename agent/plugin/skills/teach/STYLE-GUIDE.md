@@ -59,8 +59,8 @@ with a `-soft` tint.
    the topic colors `var(--topic)`, `var(--topic-2)` … `var(--topic-5)`. In canvas code, read
    them with `getComputedStyle(document.documentElement).getPropertyValue("--viz-1")`.
 3. **Structure:** everything inside one `<main>`. Order: `.meta` line, `<h1>`, `.lede` (which says, in a normal
-   sentence, how this lesson connects to the learner's goal), the video area, then sections with `<h2>`, then exercises, then
-   `.lesson-foot`.
+   sentence, how this lesson connects to the learner's goal), the video area, the review of earlier lessons (from lesson 2 on;
+   SKILL.md, "Review of earlier lessons"), then sections with `<h2>`, then exercises, then `.lesson-foot`.
 4. **Headings:** one `<h1>` (the lesson title). Sections use `<h2>`, subsections `<h3>`. No labels
    or kickers above headings. No section numbers unless the order itself matters. Every title and
    heading says what the section teaches, in plain words (WRITING.md, "Titles and headings").
